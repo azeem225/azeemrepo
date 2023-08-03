@@ -1,0 +1,161 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "westus2"
+    },
+    "privateDnsZoneName": {
+      "type": "string",
+      "defaultValue": "privatednszone.dnspoc.com"
+    },
+    "recordSetName": {
+      "type": "string",
+      "defaultValue": "my-recordset"
+    },
+    "aRecordValue": {
+      "type": "string",
+      "defaultValue": "10.0.0.1"
+    },
+    "cnameRecordSetName": {
+      "type": "string",
+      "defaultValue": "my-cnamerecordset"
+    },
+    "cnameRecordValue": {
+      "type": "string",
+      "defaultValue": "vm.pocdns.com"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-09-01",
+      "name": "[parameters('privateDnsZoneName')]",
+      "location": "[parameters('location')]"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/A",
+      "apiVersion": "2020-09-01",
+      "name": "[format('{0}/{1}', parameters('recordSetName'), parameters('privateDnsZoneName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))]"
+      ],
+      "properties": {
+        "TTL": 3600,
+        "ARecords": [
+          {
+            "ipv4Address": "[parameters('aRecordValue')]"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/CNAME",
+      "apiVersion": "2020-09-01",
+      "name": "[format('{0}/{1}', parameters('cnameRecordSetName'), parameters('privateDnsZoneName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))]"
+      ],
+      "properties": {
+        "TTL": 3600,
+        "CNAMERecord": {
+          "cname": "[parameters('cnameRecordValue')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-11-01",
+      "name": "my-vnet",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "my-subnet",
+            "properties": {
+              "addressPrefix": "10.0.0.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-11-01",
+      "name": "my-networkinterface",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', 'my-vnet')]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "my-ipconfiguration",
+            "properties": {
+              "subnet": {
+                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', 'my-vnet'), '/subnets/my-subnet')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAddress": "10.0.0.2",
+              "dnsSettings": {
+                "dnsServers": [
+                  "[reference(resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName')), '2020-09-01').properties.dnsServers[0].ipAddresses[0]]"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2022-03-01",
+      "name": "my-vm",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', 'my-networkinterface')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_DS2_v2"
+        },
+        "osProfile": {
+          "computerName": "my-vm",
+          "adminUsername": "adminUser",
+          "adminPassword": "adminPassword",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "20.04-LTS",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'my-networkinterface')]"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
