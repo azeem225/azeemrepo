@@ -1,0 +1,93 @@
+
+
+```bicep
+param location string = 'eastus'
+param privateDnsZoneName string = 'privatednszone.contoso.com'
+param virtualNetworkName string = 'my-vnet'
+param subnetName string = 'my-subnet'
+param vmName string = 'my-vm'
+
+resource privatednszone 'Microsoft.Network/privateDnsZones@2020-09-01' = {
+  name: privateDnsZoneName
+  location: location
+}
+
+resource virtualnetwork 'Microsoft.Network/virtualNetworks@2020-11-01' = {
+  name: virtualNetworkName
+  location: location
+  properties: {
+    addressSpace: {
+      addressPrefixes: [
+        '10.0.0.0/16'
+      ]
+    }
+    subnets: [
+      {
+        name: subnetName
+        properties: {
+          addressPrefix: '10.0.0.0/24'
+          privateEndpointNetworkPolicies: 'Disabled'
+          privateLinkServiceNetworkPolicies: 'Enabled'
+        }
+      }
+    ]
+    dhcpOptions: {
+      dnsServers: [
+        privatednszone.properties.dnsServers[0].ipAddresses[0]
+      ]
+    }
+  }
+}
+
+resource virtualmachine 'Microsoft.Compute/virtualMachines@2022-03-01' = {
+  name: vmName
+  location: location
+  dependsOn: [
+    virtualnetwork
+  ]
+  properties: {
+    hardwareProfile: {
+      vmSize: 'Standard_DS2_v2'
+    }
+    osProfile: {
+      computerName: vmName
+      adminUsername: 'adminUser'
+      adminPassword: 'adminPassword'
+    }
+    storageProfile: {
+      imageReference: {
+        publisher: 'Canonical'
+        offer: 'UbuntuServer'
+        sku: '18.04-LTS'
+        version: 'latest'
+      }
+      osDisk: {
+        createOption: 'FromImage'
+        managedDisk: {
+          storageAccountType: 'Standard_LRS'
+        }
+      }
+    }
+    networkProfile: {
+      networkInterfaces: [
+        {
+          id: virtualnetwork.properties.subnets[0].id
+        }
+      ]
+    }
+  }
+}
+```
+
+In the code above:
+- `location` parameter represents the region where the resources will be deployed.
+- `privateDnsZoneName` parameter represents the name of the Private DNS zone you want to create.
+- `virtualNetworkName` parameter represents the name of the virtual network.
+- `subnetName` parameter represents the name of the subnet within the virtual network.
+- `vmName` parameter represents the name of the virtual machine.
+
+Make sure to replace the placeholders for parameter values and adjust the code as needed for your specific scenario.
+
+This code creates a Private DNS zone, a virtual network, and a virtual machine. The DHCP options of the virtual network are set to use the Private DNS server for DNS resolution. The virtual machine is connected to the subnet within the virtual network.
+
+You can deploy this Bicep code using the Azure Bicep CLI or through Azure DevOps pipelines.
