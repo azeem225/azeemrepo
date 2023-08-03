@@ -1,19 +1,44 @@
-
+ Certainly! Here's an example of a Bicep code that integrates Private DNS zone, creates A and CNAME records, and provisions a virtual machine that can resolve the DNS queries:
 
 ```bicep
 param location string = 'eastus'
 param privateDnsZoneName string = 'privatednszone.contoso.com'
-param virtualNetworkName string = 'my-vnet'
-param subnetName string = 'my-subnet'
-param vmName string = 'my-vm'
+param recordSetName string = 'my-recordset'
+param aRecordValue string = '10.0.0.1'
+param cnameRecordSetName string = 'my-cnamerecordset'
+param cnameRecordValue string = 'vm.contoso.com'
 
 resource privatednszone 'Microsoft.Network/privateDnsZones@2020-09-01' = {
   name: privateDnsZoneName
   location: location
 }
 
-resource virtualnetwork 'Microsoft.Network/virtualNetworks@2020-11-01' = {
-  name: virtualNetworkName
+resource recordSet 'Microsoft.Network/privateDnsZones/A@2020-09-01' = {
+  name: '${recordSetName}.${privateDnsZoneName}'
+  parent: privatednszone
+  properties: {
+    TTL: 3600
+    ARecords: [
+      {
+        ipv4Address: aRecordValue
+      }
+    ]
+  }
+}
+
+resource cnameRecordSet 'Microsoft.Network/privateDnsZones/CNAME@2020-09-01' = {
+  name: '${cnameRecordSetName}.${privateDnsZoneName}'
+  parent: privatednszone
+  properties: {
+    TTL: 3600
+    CNAMERecord: {
+      cname: cnameRecordValue
+    }
+  }
+}
+
+resource virtualNetwork 'Microsoft.Network/virtualNetworks@2020-11-01' = {
+  name: 'my-vnet'
   location: location
   properties: {
     addressSpace: {
@@ -23,42 +48,60 @@ resource virtualnetwork 'Microsoft.Network/virtualNetworks@2020-11-01' = {
     }
     subnets: [
       {
-        name: subnetName
+        name: 'my-subnet'
         properties: {
           addressPrefix: '10.0.0.0/24'
-          privateEndpointNetworkPolicies: 'Disabled'
-          privateLinkServiceNetworkPolicies: 'Enabled'
         }
       }
     ]
-    dhcpOptions: {
-      dnsServers: [
-        privatednszone.properties.dnsServers[0].ipAddresses[0]
-      ]
-    }
   }
 }
 
-resource virtualmachine 'Microsoft.Compute/virtualMachines@2022-03-01' = {
-  name: vmName
+resource networkInterface 'Microsoft.Network/networkInterfaces@2020-11-01' = {
+  name: 'my-networkinterface'
   location: location
-  dependsOn: [
-    virtualnetwork
-  ]
+  properties: {
+    ipConfigurations: [
+      {
+        name: 'my-ipconfiguration'
+        properties: {
+          subnet: {
+            id: virtualNetwork.properties.subnets[0].id
+          }
+          privateIPAllocationMethod: 'Dynamic'
+          privateIPAddressVersion: 'IPv4'
+          privateIPAddress: '10.0.0.2'
+          dnsSettings: {
+            dnsServers: [
+              privatednszone.properties.dnsServers[0].ipAddresses[0]
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
+
+resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' = {
+  name: 'my-vm'
+  location: location
   properties: {
     hardwareProfile: {
       vmSize: 'Standard_DS2_v2'
     }
     osProfile: {
-      computerName: vmName
+      computerName: 'my-vm'
       adminUsername: 'adminUser'
       adminPassword: 'adminPassword'
+      linuxConfiguration: {
+        disablePasswordAuthentication: false
+      }
     }
     storageProfile: {
       imageReference: {
         publisher: 'Canonical'
         offer: 'UbuntuServer'
-        sku: '18.04-LTS'
+        sku: '20.04-LTS'
         version: 'latest'
       }
       osDisk: {
@@ -71,7 +114,7 @@ resource virtualmachine 'Microsoft.Compute/virtualMachines@2022-03-01' = {
     networkProfile: {
       networkInterfaces: [
         {
-          id: virtualnetwork.properties.subnets[0].id
+          id: networkInterface.id
         }
       ]
     }
@@ -79,15 +122,13 @@ resource virtualmachine 'Microsoft.Compute/virtualMachines@2022-03-01' = {
 }
 ```
 
-In the code above:
-- `location` parameter represents the region where the resources will be deployed.
-- `privateDnsZoneName` parameter represents the name of the Private DNS zone you want to create.
-- `virtualNetworkName` parameter represents the name of the virtual network.
-- `subnetName` parameter represents the name of the subnet within the virtual network.
-- `vmName` parameter represents the name of the virtual machine.
+In this code, the following resources are created:
 
-Make sure to replace the placeholders for parameter values and adjust the code as needed for your specific scenario.
+- `privatednszone`: Creates the Private DNS zone with the specified `privateDnsZoneName`.
+- `recordSet`: Creates an A record with the specified name (`recordSetName`) and IPv4 address (`aRecordValue`).
+- `cnameRecordSet`: Creates a CNAME record with the specified name (`cnameRecordSetName`) and target (`cnameRecordValue`).
+- `virtualNetwork`: Creates a virtual network with a subnet.
+- `networkInterface`: Creates a network interface with a private IP address and DNS settings pointing to the Private DNS zone.
+- `virtualMachine`: Provisions a virtual machine using the created network interface and resolves DNS queries using the Private DNS zone.
 
-This code creates a Private DNS zone, a virtual network, and a virtual machine. The DHCP options of the virtual network are set to use the Private DNS server for DNS resolution. The virtual machine is connected to the subnet within the virtual network.
-
-You can deploy this Bicep code using the Azure Bicep CLI or through Azure DevOps pipelines.
+Make sure to replace the placeholder parameter values and adjust the code as needed for your specific scenario.
