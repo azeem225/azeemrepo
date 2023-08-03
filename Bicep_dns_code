@@ -1,12 +1,10 @@
- Certainly! Here's an example of a Bicep code that integrates Private DNS zone, creates A and CNAME records, and provisions a virtual machine that can resolve the DNS queries:
 
-```bicep
-param location string = 'eastus'
-param privateDnsZoneName string = 'privatednszone.contoso.com'
+param location string = 'westus2'
+param privateDnsZoneName string = 'privatednszone.dnspoc.com'
 param recordSetName string = 'my-recordset'
 param aRecordValue string = '10.0.0.1'
 param cnameRecordSetName string = 'my-cnamerecordset'
-param cnameRecordValue string = 'vm.contoso.com'
+param cnameRecordValue string = 'vm.pocdns.com'
 
 resource privatednszone 'Microsoft.Network/privateDnsZones@2020-09-01' = {
   name: privateDnsZoneName
@@ -120,15 +118,3 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' = {
     }
   }
 }
-```
-
-In this code, the following resources are created:
-
-- `privatednszone`: Creates the Private DNS zone with the specified `privateDnsZoneName`.
-- `recordSet`: Creates an A record with the specified name (`recordSetName`) and IPv4 address (`aRecordValue`).
-- `cnameRecordSet`: Creates a CNAME record with the specified name (`cnameRecordSetName`) and target (`cnameRecordValue`).
-- `virtualNetwork`: Creates a virtual network with a subnet.
-- `networkInterface`: Creates a network interface with a private IP address and DNS settings pointing to the Private DNS zone.
-- `virtualMachine`: Provisions a virtual machine using the created network interface and resolves DNS queries using the Private DNS zone.
-
-Make sure to replace the placeholder parameter values and adjust the code as needed for your specific scenario.
