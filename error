@@ -1,0 +1,85 @@
+The command failed with an unexpected error. Here is the traceback:
+'NoneType' object has no attribute 'internal_response'
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connection.py", line 174, in _new_conn
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/util/connection.py", line 95, in create_connection
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/util/connection.py", line 85, in create_connection
+TimeoutError: [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connectionpool.py", line 714, in urlopen
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connectionpool.py", line 403, in _make_request
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connectionpool.py", line 1053, in _validate_conn
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connection.py", line 363, in connect
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connection.py", line 179, in _new_conn
+urllib3.exceptions.ConnectTimeoutError: (<urllib3.connection.HTTPSConnection object at 0x05163058>, 'Connection to login.microsoftonline.com timed out. (connect timeout=None)')        
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\requests/adapters.py", line 486, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connectionpool.py", line 826, in urlopen
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/connectionpool.py", line 798, in urlopen
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\urllib3/util/retry.py", line 592, in increment
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='login.microsoftonline.com', port=443): Max retries exceeded with url: /fee2d39b-c451-4cba-920f-06dacd11433e/oauth2/v2.0/token (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x05163058>, 
+'Connection to login.microsoftonline.com timed out. (connect timeout=None)'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py", line 697, in _run_job
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py", line 333, in __call__
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/command_operation.py", line 121, in handler
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/command_modules/resource/custom.py", line 546, in deploy_arm_template_at_resource_group
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/command_modules/resource/custom.py", line 589, in _deploy_arm_template_at_resource_group
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/tracing/decorator.py", line 78, in wrapper_use_tracer
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/mgmt/resource/resources/v2022_09_01/operations/_operations.py", line 7941, in begin_validate
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/mgmt/resource/resources/v2022_09_01/operations/_operations.py", line 7798, in _validate_initial      
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/_base.py", line 211, in run
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/_base.py", line 71, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/_base.py", line 71, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/_base.py", line 71, in send
+  [Previous line repeated 2 more times]
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/mgmt/core/policies/_base.py", line 47, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/policies/_redirect.py", line 158, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/policies/_retry.py", line 446, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/policies/_authentication.py", line 116, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/core/pipeline/policies/_authentication.py", line 93, in on_request
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/auth/credential_adaptor.py", line 65, in get_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/auth/credential_adaptor.py", line 38, in _get_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/auth/msal_authentication.py", line 69, in get_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/application.py", line 1278, in acquire_token_silent_with_error
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/application.py", line 1383, in _acquire_token_silent_from_cache_and_possibly_refresh_it
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/application.py", line 1435, in _acquire_token_silent_by_finding_rt_belongs_to_me_or_my_family
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/application.py", line 1482, in _acquire_token_silent_by_finding_specific_refresh_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/oauth2cli/oauth2.py", line 830, in obtain_token_by_refresh_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/oauth2cli/oauth2.py", line 262, in obtain_token_by_refresh_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/oauth2cli/oidc.py", line 116, in _obtain_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/oauth2cli/oauth2.py", line 771, in _obtain_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/oauth2cli/oauth2.py", line 234, in _obtain_token
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/individual_cache.py", line 269, in wrapper
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\msal/individual_cache.py", line 269, in wrapper
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\requests/sessions.py", line 637, in post
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\requests/sessions.py", line 589, in request
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\requests/sessions.py", line 703, in send
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\requests/adapters.py", line 507, in send
+requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='login.microsoftonline.com', port=443): Max retries exceeded with url: /fee2d39b-c451-4cba-920f-06dacd11433e/oauth2/v2.0/token (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x05163058>, 'Connection to login.microsoftonline.com timed out. (connect timeout=None)'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/arm.py", line 109, in handle_template_based_exception
+AttributeError: 'ConnectTimeout' object has no attribute 'inner_exception'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\knack/cli.py", 
+line 233, in invoke
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py", line 663, in execute
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py", line 726, in _run_jobs_serially
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/__init__.py", line 718, in _run_job
+  File "D:\a\_work\1\s\build_scripts\windows\artifacts\cli\Lib\site-packages\azure/cli/core/commands/arm.py", line 112, in handle_template_based_exception
+AttributeError: 'NoneType' object has no attribute 'internal_response'
