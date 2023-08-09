@@ -3,3 +3,14 @@ kubectl get crd wasmplugins.extensions.istio.io -o yaml
 kubectl delete crd wasmplugins.extensions.istio.io
 
 helm install istio-base istio/base -n istio-system --set defaultRevision=default --values istio_base.yaml
+
+poc_user [ ~ ]$ kubectl delete crd wasmplugins.extensions.istio.io
+customresourcedefinition.apiextensions.k8s.io "wasmplugins.extensions.istio.io" deleted
+poc_user [ ~ ]$ kubectl delete clusterrole istiod-istio-system
+Error from server (NotFound): clusterroles.rbac.authorization.k8s.io "istiod-istio-system" not found
+poc_user [ ~ ]$ kubectl delete clusterrolebinding istiod-istio-system
+clusterrolebinding.rbac.authorization.k8s.io "istiod-istio-system" deleted
+poc_user [ ~ ]$ kubectl get crd wasmplugins.extensions.istio.io -o yaml
+Error from server (NotFound): customresourcedefinitions.apiextensions.k8s.io "wasmplugins.extensions.istio.io" not found
+poc_user [ ~ ]$ helm install istio-base istio/base -n istio-system --set defaultRevision=default --values istio_base.yaml
+Error: INSTALLATION FAILED: rendered manifests contain a resource that already exists. Unable to continue with install: CustomResourceDefinition "wasmplugins.extensions.istio.io" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by": must be set to "Helm"; annotation validation error: missing key "meta.helm.sh/release-name": must be set to "istio-base"; annotation validation error: missing key "meta.helm.sh/release-namespace": must be set to "istio-system"
