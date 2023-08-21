@@ -151,3 +151,9 @@ kubectl edit configmap kiali -n istio-system
 <a href="/kiali/">Found</a>.
 
 / # 
+
+
+poc_user [ ~ ]$ http://20.239.30.137:20001/kiali/
+bash: http://20.239.30.137:20001/kiali/: No such file or directory
+poc_user [ ~ ]$ curl -v http://20.239.30.137:20001/kiali/
+*   Trying 20.239.30.137:20001...
