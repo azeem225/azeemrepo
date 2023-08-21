@@ -5,3 +5,8 @@ kubectl get clusterrolebinding istiod-istio-system
 helm uninstall <release-name> -n istio-system
 
 helm install istio-base istio/base -n istio-system --set defaultRevision=default --values istio_base.yaml --replace
+
+
+poc_user [ ~ ]$ helm install istio istio/istio -n istio-system --set profile=demo
+Error: INSTALLATION FAILED: chart "istio" matching  not found in istio index. (try 'helm repo update'): no chart name found
+poc_user [ ~ ]$ 
