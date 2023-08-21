@@ -157,3 +157,16 @@ poc_user [ ~ ]$ http://20.239.30.137:20001/kiali/
 bash: http://20.239.30.137:20001/kiali/: No such file or directory
 poc_user [ ~ ]$ curl -v http://20.239.30.137:20001/kiali/
 *   Trying 20.239.30.137:20001...
+
+
+poc_user [ ~ ]$ kubectl logs -l app=kiali -n istio-system
+E0821 09:10:39.007896       1 reflector.go:148] pkg/mod/k8s.io/client-go@v0.27.2/tools/cache/reflector.go:231: Failed to watch *v1.StatefulSet: failed to list *v1.StatefulSet: Get "https://10.0.0.1:443/apis/apps/v1/statefulsets?limit=500&resourceVersion=0": dial tcp 10.0.0.1:443: connect: connection refused
+W0821 09:10:39.007992       1 reflector.go:533] pkg/mod/k8s.io/client-go@v0.27.2/tools/cache/reflector.go:231: failed to list *v1.DaemonSet: Get "https://10.0.0.1:443/apis/apps/v1/daemonsets?limit=500&resourceVersion=0": dial tcp 10.0.0.1:443: connect: connection refused
+E0821 09:10:39.008031       1 reflector.go:148] pkg/mod/k8s.io/client-go@v0.27.2/tools/cache/reflector.go:231: Failed to watch *v1.DaemonSet: failed to list *v1.DaemonSet: Get "https://10.0.0.1:443/apis/apps/v1/daemonsets?limit=500&resourceVersion=0": dial tcp 10.0.0.1:443: connect: connection refused
+W0821 09:10:39.008080       1 reflector.go:533] pkg/mod/k8s.io/client-go@v0.27.2/tools/cache/reflector.go:231: failed to list *v1.Service: Get "https://10.0.0.1:443/api/v1/services?limit=500&resourceVersion=0": dial tcp 10.0.0.1:443: connect: connection refused
+E0821 09:10:39.008110       1 reflector.go:148] pkg/mod/k8s.io/client-go@v0.27.2/tools/cache/reflector.go:231: Failed to watch *v1.Service: failed to list *v1.Service: Get "https://10.0.0.1:443/api/v1/services?limit=500&resourceVersion=0": dial tcp 10.0.0.1:443: connect: connection refused
+2023-08-21T09:10:40Z INF [Kiali Cache] Started
+2023-08-21T09:10:40Z INF [Kiali Cache] Kube cache is active for cluster: [Kubernetes]
+2023-08-21T09:10:40Z INF Server endpoint will start at [:20001/kiali]
+2023-08-21T09:10:40Z INF Server endpoint will serve static content from [/opt/kiali/console]
+2023-08-21T09:10:40Z INF Starting Metrics Server on [:9090]
