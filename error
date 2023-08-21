@@ -340,3 +340,68 @@ Replace `[EXTERNAL-IP]` with the actual IP you retrieved.
 Please note:
 - Using the wildcard host (`*`) in the above resources means any domain pointed to the ingress IP will be directed to Kiali. Adjust if necessary.
 - Ensure that you have the `istio-ingressgateway` running in the `istio-system` namespace. If not, you may need to review your Istio installation.
+
+
+
+
+poc_user [ ~ ]$ kubectl get virtualservices,gateway -n istio-system
+No resources found in istio-system namespace.
+poc_user [ ~ ]$ vi kiali_gateway.yaml
+```bash
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: kiali-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-kiali
+      protocol: HTTP
+    hosts:
+    - "*"
+
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kiali-virtualservice
+  namespace: istio-system
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - kiali-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /kiali
+    route:
+    - destination:
+        host: kiali.istio-system.svc.cluster.local
+        port:
+          number: 20001
+```
+```
+
+poc_user [ ~ ]$ kubectl apply -f kiali-gateway.yaml
+error: the path "kiali-gateway.yaml" does not exist
+poc_user [ ~ ]$ ls
+clouddrive  kiali_gateway.yaml
+poc_user [ ~ ]$ kubectl apply -f kiali_gateway.yaml
+gateway.networking.istio.io/kiali-gateway created
+virtualservice.networking.istio.io/kiali-virtualservice created
+poc_user [ ~ ]$ kubectl get svc istio-ingressgateway -n istio-system
+Error from server (NotFound): services "istio-ingressgateway" not found
+poc_user [ ~ ]$ kubectl get svc -n istio-system
+NAME     TYPE           CLUSTER-IP    EXTERNAL-IP     PORT(S)                                 AGE
+istiod   ClusterIP      10.0.63.198   <none>          15010/TCP,15012/TCP,443/TCP,15014/TCP   114m
+kiali    LoadBalancer   10.0.113.12   20.239.30.137   20001:31439/TCP,9090:30292/TCP          60m
+poc_user [ ~ ]$ kubectl get svc istio-ingressgateway -n istio-system
+Error from server (NotFound): services "istio-ingressgateway" not found
+poc_user [ ~ ]$
