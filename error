@@ -405,3 +405,79 @@ kiali    LoadBalancer   10.0.113.12   20.239.30.137   20001:31439/TCP,9090:30292
 poc_user [ ~ ]$ kubectl get svc istio-ingressgateway -n istio-system
 Error from server (NotFound): services "istio-ingressgateway" not found
 poc_user [ ~ ]$
+
+
+
+
+To reinstall Istio with the Ingress Gateway, follow these steps:
+
+1. **Backup any custom configurations**: Before you proceed, make sure you've backed up any custom configurations you may have applied to your current Istio setup. This includes any custom `Gateway`, `VirtualService`, `DestinationRule`, etc.
+
+2. **Uninstall the Current Istio Installation**:
+
+   If you installed Istio using `istioctl`:
+
+   ```bash
+   istioctl manifest generate | kubectl delete -f -
+   ```
+
+   This will uninstall Istio components.
+
+   If you installed using Helm (for older Istio versions):
+
+   ```bash
+   helm delete --purge istio-init
+   helm delete --purge istio
+   ```
+
+   Ensure all Istio components are removed:
+
+   ```bash
+   kubectl get pods -n istio-system
+   ```
+
+3. **Install Istio with the Ingress Gateway**:
+
+   First, download the latest Istio release:
+
+   ```bash
+   curl -L https://istio.io/downloadIstio | sh -
+   ```
+
+   Navigate to the Istio package directory:
+
+   ```bash
+   cd istio-<version>
+   ```
+
+   Add `istioctl` to your PATH:
+
+   ```bash
+   export PATH=$PWD/bin:$PATH
+   ```
+
+   Install Istio with the `demo` profile, which includes the Ingress Gateway:
+
+   ```bash
+   istioctl install --set profile=demo
+   ```
+
+   Validate that the `istio-ingressgateway` service is running:
+
+   ```bash
+   kubectl get svc istio-ingressgateway -n istio-system
+   ```
+
+4. **Re-apply your custom configurations**: If you had custom configurations backed up from step 1, re-apply them now.
+
+5. **Apply the Kiali Gateway and VirtualService**: 
+
+   Use the `kiali_gateway.yaml` file you've created before:
+
+   ```bash
+   kubectl apply -f kiali_gateway.yaml
+   ```
+
+6. **Verify Access**: Try accessing the Kiali dashboard via the Ingress Gateway.
+
+By following these steps, you should have Istio reinstalled with the Ingress Gateway, and Kiali should be accessible via the Istio Ingress Gateway.
