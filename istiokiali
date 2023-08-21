@@ -93,3 +93,47 @@ Replace `<EXTERNAL-IP>` with the IP address you obtained in step 2.
 You should now be able to access the Kiali dashboard from an external browser using the provided IP address and port.
 
 Note: Exposing services like Kiali to the internet using LoadBalancers without any additional security measures is not recommended for production scenarios due to potential security risks. For production use, you'd typically set up an Ingress with HTTPS and perhaps additional authentication mechanisms.
+
+
+
+If you installed Kiali using Helm, you can uninstall it using the `helm uninstall` command. 
+
+Here's how to uninstall Kiali:
+
+### 1. **Uninstall Kiali using Helm**:
+
+Assuming you installed Kiali with a release name of `kiali`, you can uninstall it with:
+
+```bash
+helm uninstall kiali -n istio-system
+```
+
+Replace `kiali` with the release name you used during installation if it's different.
+
+### 2. **Delete Any Remaining Resources**:
+
+Sometimes, certain resources might remain even after uninstalling via Helm. You can delete them manually:
+
+```bash
+kubectl delete services,deployments,pods,configmaps,secrets,ingress,serviceaccounts,roles,rolebindings -l app=kiali -n istio-system
+```
+
+### 3. **Optionally, Clean Up Persistent Volume Claims**:
+
+If there were any persistent volumes used by Kiali (which is unlikely for a typical Kiali setup, but always good to check), you can delete them:
+
+```bash
+kubectl delete pvc -l app=kiali -n istio-system
+```
+
+### 4. **Verify Resources Were Deleted**:
+
+You can ensure that all Kiali-related resources were deleted:
+
+```bash
+kubectl get all -l app=kiali -n istio-system
+```
+
+If there's no output, then all resources related to Kiali have been deleted.
+
+Remember to be cautious while deleting resources, especially in production environments, to avoid unintended data or service loss.
