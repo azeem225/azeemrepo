@@ -10,3 +10,71 @@ helm install istio-base istio/base -n istio-system --set defaultRevision=default
 poc_user [ ~ ]$ helm install istio istio/istio -n istio-system --set profile=demo
 Error: INSTALLATION FAILED: chart "istio" matching  not found in istio index. (try 'helm repo update'): no chart name found
 poc_user [ ~ ]$ 
+
+
+If you're unable to access Kiali on a browser after setting it up as a `LoadBalancer` or another service type, let's troubleshoot the issue step by step.
+
+### 1. **Check the Service**:
+Ensure the Kiali service is up and has an external IP:
+
+```bash
+kubectl get svc kiali -n istio-system
+```
+
+Check the `TYPE` and `EXTERNAL-IP` columns. If it's a `LoadBalancer`, make sure there's an IP address assigned under the `EXTERNAL-IP` column.
+
+### 2. **Service Logs and Events**:
+Check the logs and events related to the Kiali service:
+
+```bash
+kubectl describe svc kiali -n istio-system
+```
+
+This can give clues if there's an issue with the service or with obtaining an external IP.
+
+### 3. **Access Inside the Cluster**:
+Test access to Kiali from within the cluster:
+
+```bash
+kubectl run -i --tty --rm debug --image=alpine -- sh
+```
+
+This will launch an Alpine Linux pod. Once inside:
+
+```bash
+apk add --no-cache curl
+curl kiali.istio-system.svc.cluster.local:20001
+```
+
+You should get a response from Kiali. If you do, it means Kiali is accessible internally.
+
+### 4. **Check Network and Firewall Rules**:
+Depending on where your Kubernetes cluster is running, there might be network and firewall rules preventing external access:
+
+- **Cloud Providers**: Ensure that there are no firewall rules blocking the necessary ports.
+- **Local Kubernetes**: If you're using Minikube, Kind, etc., accessing services might be different.
+  
+### 5. **Kiali Logs**:
+Check the logs of the Kiali pod to see if there's any startup error or issue:
+
+```bash
+kubectl logs -l app=kiali -n istio-system
+```
+
+### 6. **Port Forwarding (Alternative)**:
+If all else fails and you just want to access Kiali from your local machine, you can use port forwarding:
+
+```bash
+kubectl port-forward svc/kiali -n istio-system 20001:20001
+```
+
+Then, go to `http://localhost:20001` on your browser.
+
+### 7. **Browser Issues**:
+- Ensure you're not encountering browser-specific issues. Try accessing Kiali in an incognito/private window or a different browser.
+- Check if there's any proxy or VPN that might be interfering with the connection.
+
+### 8. **Reinstall/Reset**:
+If you've tried the above and still can't access Kiali, consider uninstalling and reinstalling it.
+
+Remember: Whenever you're exposing a service, especially if it's for production use, always make sure it's secure. Directly exposing Kiali with a LoadBalancer without any protection isn't recommended for non-testing scenarios. Consider setting up Ingress with authentication and HTTPS for production uses.
