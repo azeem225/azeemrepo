@@ -254,3 +254,89 @@ Lastly, Kiali has an active community, and issues like these can be discussed in
 poc_user [ ~ ]$ kubectl get virtualservices,gateway -n istio-system
 No resources found in istio-system namespace.
 poc_user [ ~ ]$ 
+
+
+
+-=============
+
+Certainly. To expose Kiali using Istio's Gateway and VirtualService, follow these steps:
+
+### 1. Adjust the Service Type
+
+First, let's adjust the Kiali Service to be a `LoadBalancer`:
+
+```bash
+kubectl patch svc kiali -n istio-system -p '{"spec": {"type": "LoadBalancer"}}'
+```
+
+This will expose the Kiali Service externally, potentially giving you an external IP, depending on your Kubernetes provider.
+
+### 2. Create a Gateway and VirtualService for Kiali
+
+If you want to use Istio's Gateway and VirtualService to route external traffic to Kiali, follow these steps:
+
+Create a file named `kiali-gateway.yaml` with the following content:
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: kiali-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-kiali
+      protocol: HTTP
+    hosts:
+    - "*"
+
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kiali-virtualservice
+  namespace: istio-system
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - kiali-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /kiali
+    route:
+    - destination:
+        host: kiali.istio-system.svc.cluster.local
+        port:
+          number: 20001
+```
+
+Apply the Gateway and VirtualService:
+
+```bash
+kubectl apply -f kiali-gateway.yaml
+```
+
+Now, you should be able to access Kiali via the Istio Ingress Gateway. To get the IP for the Ingress Gateway:
+
+```bash
+kubectl get svc istio-ingressgateway -n istio-system
+```
+
+Look for the `EXTERNAL-IP` of the `istio-ingressgateway` service. Access Kiali using that IP:
+
+```
+http://[EXTERNAL-IP]/kiali/
+```
+
+Replace `[EXTERNAL-IP]` with the actual IP you retrieved.
+
+Please note:
+- Using the wildcard host (`*`) in the above resources means any domain pointed to the ingress IP will be directed to Kiali. Adjust if necessary.
+- Ensure that you have the `istio-ingressgateway` running in the `istio-system` namespace. If not, you may need to review your Istio installation.
