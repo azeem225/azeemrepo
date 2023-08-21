@@ -117,3 +117,8 @@ poc_user [ ~ ]$ kubectl logs -l app=kiali -n istio-system
 2023-08-21T08:56:16Z INF Using authentication strategy [login]
 2023-08-21T08:56:16Z FTL Invalid authentication strategy [login]
 poc_user [ ~ ]$ 
+
+
+
+kubectl get configmap kiali -n istio-system -o jsonpath='{.data.config\.yaml}' | less
+kubectl edit configmap kiali -n istio-system
