@@ -170,3 +170,73 @@ E0821 09:10:39.008110       1 reflector.go:148] pkg/mod/k8s.io/client-go@v0.27.2
 2023-08-21T09:10:40Z INF Server endpoint will start at [:20001/kiali]
 2023-08-21T09:10:40Z INF Server endpoint will serve static content from [/opt/kiali/console]
 2023-08-21T09:10:40Z INF Starting Metrics Server on [:9090]
+
+
+Okay, let's clarify the situation a bit:
+
+1. You can access Kiali metrics at `http://20.239.30.137:9090/kiali/`.
+2. You cannot access the Kiali dashboard at `http://20.239.30.137:20001/kiali/`.
+
+Given the above, it sounds like the metrics service for Kiali is working, but the main dashboard isn't accessible.
+
+Here are a few steps you can take to potentially resolve the issue:
+
+1. **Check Kiali Service Configuration**:
+    First, verify that the Kiali service is correctly configured to expose port `20001`.
+   
+   ```bash
+   kubectl get svc kiali -n istio-system -o jsonpath='{.spec.ports[?(@.port==20001)]}'
+   ```
+
+   You should see an output for the port configuration for `20001`.
+
+2. **Kiali Configurations**:
+   Ensure that Kiali's configurations are set up correctly. Especially, see if there's any override for its base URL or any other configuration that might be affecting its accessibility.
+
+   ```bash
+   kubectl get configmaps kiali -n istio-system -o json | jq '.data'
+   ```
+
+   You can check the returned configurations to see if everything seems right.
+
+3. **Istio Ingress Configuration**:
+   If you're using Istio's ingress gateway to access Kiali, make sure the configurations are correct. Check the VirtualService and Gateway for Kiali:
+
+   ```bash
+   kubectl get virtualservices,gateway -n istio-system
+   ```
+
+   Ensure they're set up to route traffic correctly for Kiali.
+
+4. **Direct Port-Forwarding**:
+   As a way to narrow down the issue, you can use `kubectl port-forward` to directly forward the Kiali service to your local machine and see if you can access it:
+
+   ```bash
+   kubectl port-forward svc/kiali -n istio-system 20001:20001
+   ```
+
+   Now, try accessing `http://localhost:20001/kiali/` from your browser. If you can access Kiali this way, the issue may be with the way traffic is being routed in your cluster.
+
+5. **Browser and Network Issues**:
+   Sometimes, the problem can be related to browser configurations, caches, or even network issues:
+
+   - Try accessing the Kiali dashboard in an incognito/private mode to bypass cache.
+   - Try a different browser.
+   - Check if any browser extensions might be blocking the page.
+   - Check network configurations/firewalls in your environment.
+
+6. **Logs & Events**:
+   While you've already checked logs, it's a good idea to look for any events related to the Kiali service or its related pods:
+
+   ```bash
+   kubectl describe svc/kiali -n istio-system
+   kubectl describe pods -l app=kiali -n istio-system
+   ```
+
+7. **Reinstall/Upgrade Kiali**:
+   If everything else fails, consider uninstalling and reinstalling Kiali. Sometimes a fresh installation can fix underlying issues. Also, consider upgrading Kiali if an upgrade is available; the newer version may have fixes for your problem.
+
+8. **Check Istio's Sidecar Configuration**:
+   If Kiali has an Istio sidecar, ensure it's correctly set up. Incorrect Istio configurations can affect pod-to-pod communication.
+
+Lastly, Kiali has an active community, and issues like these can be discussed in their forums or GitHub issues. If you believe this might be a bug or if you need specific help related to Kiali, consider reaching out directly to the Kiali community.
