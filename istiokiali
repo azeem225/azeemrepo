@@ -1,0 +1,95 @@
+Certainly! Here's a combined guide for setting up Istio along with Kiali on a Kubernetes cluster using Helm:
+
+### 1. **Pre-requisites**:
+- A Kubernetes cluster up and running.
+- `kubectl` installed and configured to manage the cluster.
+- Helm v3.x installed.
+
+### 2. **Create Namespace for Istio**:
+```bash
+kubectl create namespace istio-system
+```
+
+### 3. **Add the Istio and Kiali Helm Chart Repositories**:
+```bash
+helm repo add istio https://istio-release.storage.googleapis.com/charts
+helm repo add kiali https://kiali.org/helm-charts
+helm repo update
+```
+
+### 4. **Install Istio's Custom Resource Definitions (CRDs)**:
+```bash
+helm install istio-base istio/base --namespace istio-system
+```
+
+### 5. **Install Istio Components**:
+We're using the `demo` profile to simplify this guide. For production deployments, you should consider a different profile and carefully select components to install.
+```bash
+helm install istio istio/istio -n istio-system --set profile=demo
+```
+
+### 6. **Install Kiali**:
+First, we'll create a secret for Kiali's credentials:
+```bash
+kubectl create secret generic kiali -n istio-system --from-literal=username=<YOUR_USERNAME> --from-literal=passphrase=<YOUR_PASSWORD>
+```
+Replace `<YOUR_USERNAME>` and `<YOUR_PASSWORD>` with your desired credentials.
+
+Then, install Kiali using Helm:
+```bash
+helm install --namespace istio-system --set auth.strategy="login" --set auth.usernameKey="kiali" --set auth.passphraseKey="kiali-passphrase" kiali kiali/kiali-server
+```
+
+### 7. **Enable Automatic Sidecar Injection**:
+For Istio to manage traffic, it requires an Envoy sidecar to be deployed alongside application pods. To enable automatic sidecar injection for a namespace (replace `<YOUR_NAMESPACE>`):
+```bash
+kubectl label namespace <YOUR_NAMESPACE> istio-injection=enabled
+```
+
+### 8. **Access the Kiali Dashboard**:
+To access Kiali:
+
+1. Forward the Kiali service port:
+```bash
+kubectl -n istio-system port-forward svc/kiali 20001:20001
+```
+
+2. Access Kiali by navigating to [http://localhost:20001](http://localhost:20001) in your browser. Use the credentials you set earlier (`<YOUR_USERNAME>` and `<YOUR_PASSWORD>`) to log in.
+
+This guide sets up Istio and Kiali in a basic configuration suitable for testing and exploration. For more secure and scalable setups, consult the documentation and best practices of both Istio and Kiali.
+
+
+===================================
+To access Kiali on an external browser, you'd typically expose its service via an Ingress, LoadBalancer, or NodePort. Among these, the simplest approach for testing is to use a `LoadBalancer`, assuming your Kubernetes cluster is running on a platform that supports this (e.g., cloud providers like AWS, GCP, Azure).
+
+Here are the steps to modify the service type of Kiali to `LoadBalancer`:
+
+### 1. Modify Kiali Service to LoadBalancer:
+
+```bash
+kubectl patch svc kiali -n istio-system --patch '{"spec": {"type": "LoadBalancer"}}'
+```
+
+### 2. Obtain the External IP:
+
+After a few moments (this could vary depending on your cloud provider), the LoadBalancer should assign an external IP address to the Kiali service. You can obtain this IP with:
+
+```bash
+kubectl get svc kiali -n istio-system
+```
+
+Watch for the `EXTERNAL-IP` column. Once it has been populated, note down this IP.
+
+### 3. Access Kiali Dashboard:
+
+Open your browser and navigate to:
+
+```
+http://<EXTERNAL-IP>:20001
+```
+
+Replace `<EXTERNAL-IP>` with the IP address you obtained in step 2.
+
+You should now be able to access the Kiali dashboard from an external browser using the provided IP address and port.
+
+Note: Exposing services like Kiali to the internet using LoadBalancers without any additional security measures is not recommended for production scenarios due to potential security risks. For production use, you'd typically set up an Ingress with HTTPS and perhaps additional authentication mechanisms.
