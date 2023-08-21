@@ -122,3 +122,32 @@ poc_user [ ~ ]$
 
 kubectl get configmap kiali -n istio-system -o jsonpath='{.data.config\.yaml}' | less
 kubectl edit configmap kiali -n istio-system
+
+
+
+/ # curl -v http://20.239.30.137:20001
+* processing: http://20.239.30.137:20001
+*   Trying 20.239.30.137:20001...
+* Connected to 20.239.30.137 (20.239.30.137) port 20001
+> GET / HTTP/1.1
+> Host: 20.239.30.137:20001
+> User-Agent: curl/8.2.1
+> Accept: */*
+> 
+< HTTP/1.1 302 Found
+< content-type: text/html; charset=utf-8
+< location: /kiali/
+< vary: Accept-Encoding
+< date: Mon, 21 Aug 2023 09:21:10 GMT
+< content-length: 30
+< x-envoy-upstream-service-time: 0
+< server: istio-envoy
+< x-envoy-decorator-operation: kiali.istio-system.svc.cluster.local:20001/*
+< 
+<a href="/kiali/">Found</a>.
+
+* Connection #0 to host 20.239.30.137 left intact
+/ # curl kiali.istio-system.svc.cluster.local:20001
+<a href="/kiali/">Found</a>.
+
+/ # 
