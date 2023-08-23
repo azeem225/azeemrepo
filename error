@@ -481,3 +481,10 @@ To reinstall Istio with the Ingress Gateway, follow these steps:
 6. **Verify Access**: Try accessing the Kiali dashboard via the Ingress Gateway.
 
 By following these steps, you should have Istio reinstalled with the Ingress Gateway, and Kiali should be accessible via the Istio Ingress Gateway.
+
+
+=================================================
+
+
+
+https://github.com/kiali/kiali-operator/blob/master/deploy/deploy-kiali-operator.sh
