@@ -1,0 +1,13 @@
+{
+
+    "status": "Failed",
+
+    "error": {
+
+        "code": "ResourceQuotaExceeded",
+
+        "message": "Resource quota of cores exceeded. Maximum allowed: 4, Current in use: 0, Additional requested: 44."
+
+    }
+
+}
