@@ -1,0 +1,38 @@
+If you prefer to use the Azure Portal instead of the Azure CLI for setting up the prerequisites for the Terraform script, here's how you can achieve that:
+
+1. **Azure Active Directory (AAD) Application Setup**:
+
+   a. **Create the AAD Applications**:
+      1. Navigate to the [Azure Portal](https://portal.azure.com/).
+      2. In the left navigation pane, select "Azure Active Directory."
+      3. Under "App registrations," select "New registration."
+      4. Provide a name (e.g., `aro-cli`), leave the default values for the other fields, and click "Register."
+      5. Once registered, note the Application (client) ID. This will be your `ARO_CLI_APP_ID`.
+      6. Under "Certificates & secrets," click on "New client secret." Provide a description, select an expiration, and then note down the value of the secret.
+      7. Repeat the process to create another application (e.g., `aro-cluster`). This will be your `ARO_CLUSTER_APP_ID`.
+
+2. **Set up Necessary Roles**:
+
+   a. **Assign Permissions**:
+      1. While inside the `aro-cli` app registration, go to "API permissions."
+      2. Click "Add a permission," choose "My APIs," select the `aro-cluster` app, and then grant permissions.
+      3. Click "Add" and then "Done."
+
+   b. **Assign the Role**:
+      1. In the Azure Portal main page, search for "Subscriptions" and click on it.
+      2. Select your subscription.
+      3. In the left pane, under "Access control (IAM)," click on "Add" > "Add role assignment."
+      4. For the Role, select "Contributor."
+      5. In the "Select" field, type and select the name of your `aro-cli` app, and then click "Save."
+
+3. **Get Tenant and Subscription IDs**:
+
+   a. In the Azure Portal, go to "Subscriptions."
+   b. Select your subscription.
+   c. In the overview tab, you can find both your Subscription ID and the Directory (tenant) ID. Note these down.
+
+4. **Update the Terraform Script**:
+
+   Now, you'll need to manually incorporate the IDs and secrets into your Terraform script (as mentioned in the previous response). Make sure not to expose these secrets in public repositories; consider using environment variables or Terraform variables to keep them secure.
+
+After performing the above steps in the Azure Portal, your Terraform script should have all the prerequisites set up, and you can initialize and apply the Terraform configuration.
