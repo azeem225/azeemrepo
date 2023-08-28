@@ -1,0 +1,81 @@
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "rg" {
+  name     = "openshift-resource-group"
+  location = "East US"
+}
+
+resource "azurerm_virtual_network" "test" {
+  name                = "my-vnet"
+  address_space       = ["10.0.0.0/8"]
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_subnet" "master" {
+  name                 = "master-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+resource "azurerm_subnet" "worker" {
+  name                 = "worker-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
+resource "azurerm_user_assigned_identity" "test" {
+  name                = "my-identity"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_openshift_managed_cluster" "cluster" {
+  name                = "my-openshift-cluster"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  domain_prefix       = "myoscluster"
+
+  kubernetes_version  = "4.3"
+
+  api_server_authorized_ip_ranges = [
+    "0.0.0.0/32",
+  ]
+
+  network_profile {
+    vnet_cidr_addresses        = ["10.0.0.0/8"]
+    service_cidr               = "172.16.0.0/16"
+    default_node_pool_sub_cidr = "10.240.0.0/16"
+  }
+
+  identity {
+    type                      = "SystemAssigned, UserAssigned"
+    user_assigned_identity_id = azurerm_user_assigned_identity.test.id
+  }
+
+  master_pool {
+    name            = "masterpool"
+    subnet_id       = azurerm_subnet.master.id
+    vm_size         = "Standard_D2s_v3"
+    os_type         = "Linux"
+    os_disk_size_gb = 128
+  }
+
+  default_node_pool {
+    name            = "default"
+    role            = "Compute"
+    subnet_id       = azurerm_subnet.worker.id
+    vm_size         = "Standard_D2s_v3"
+    os_disk_size_gb = 128
+  }
+
+  depends_on = [azurerm_user_assigned_identity.test, azurerm_virtual_network.test]
+}
+
+output "console_url" {
+  value = azurerm_openshift_managed_cluster.cluster.console_url
+}
