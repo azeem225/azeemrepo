@@ -74,3 +74,35 @@ You can install other OpenShift components like logging, monitoring, etc., as ne
 This guide provides a high-level overview of setting up a basic OpenShift cluster. Many detailed configurations, particularly around security, networking, and storage, are glossed over for simplicity.
 
 It's essential to always refer to the official OpenShift documentation for the version you're installing. The setup process can vary between versions, and the official documentation will provide the most accurate and detailed steps.
+
+
+
+
+====================================
+
+====================================
+
+I apologize for the confusion. The URL provided is a templated one, meaning you would replace `<version>` with the actual version number of OpenShift Origin you're attempting to install, and `<hash>` with the actual hash corresponding to that version. 
+
+However, as OpenShift has evolved, especially transitioning from OpenShift 3.x to 4.x, many things have changed, including how and where you can download client tools and binaries.
+
+For OpenShift 4.x, you wouldn't use the old "origin" GitHub repository to get the client tools. Instead, you would get them from Red Hat's official site.
+
+### Steps to get OpenShift client tools:
+
+1. **Visit the OpenShift Cluster Manager site**:
+Go to [Red Hat OpenShift Cluster Manager](https://cloud.redhat.com/openshift/).
+
+2. **Log in or sign up**:
+If you don't have a Red Hat account, you'll need to create one.
+
+3. **Access the 'Install on your own infrastructure' option**:
+Once logged in, go to the OpenShift install page, and you should find an option for "Run on your infrastructure." 
+
+4. **Choose your infrastructure and OpenShift version**:
+Based on where you want to install, choose the appropriate option. Typically, you'd go for "Linux" for basic installations.
+
+5. **Download the Command-line interface**:
+You should see an option to download the `oc` client tools for your operating system.
+
+Remember, OpenShift 4.x brought significant changes, especially in the installation process. If you're attempting to manually install OpenShift 4.x, the procedure will be quite different from 3.x versions, and I would strongly recommend referring to the official documentation for detailed, up-to-date guidance.
