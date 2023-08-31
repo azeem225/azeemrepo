@@ -1,38 +1,76 @@
-If you prefer to use the Azure Portal instead of the Azure CLI for setting up the prerequisites for the Terraform script, here's how you can achieve that:
+Setting up a 3-node OpenShift cluster manually requires a significant amount of preparation and configuration. This guide will give you an overview of the steps involved in creating a simple 3-node cluster. For a production setup, you'd typically have at least 3 control plane (master) nodes and multiple worker nodes, but in this example, we will use 1 master node and 2 worker nodes.
 
-1. **Azure Active Directory (AAD) Application Setup**:
+### **1. Infrastructure Setup**:
 
-   a. **Create the AAD Applications**:
-      1. Navigate to the [Azure Portal](https://portal.azure.com/).
-      2. In the left navigation pane, select "Azure Active Directory."
-      3. Under "App registrations," select "New registration."
-      4. Provide a name (e.g., `aro-cli`), leave the default values for the other fields, and click "Register."
-      5. Once registered, note the Application (client) ID. This will be your `ARO_CLI_APP_ID`.
-      6. Under "Certificates & secrets," click on "New client secret." Provide a description, select an expiration, and then note down the value of the secret.
-      7. Repeat the process to create another application (e.g., `aro-cluster`). This will be your `ARO_CLUSTER_APP_ID`.
+#### 1.1. VM Provisioning:
+- Provision 3 VMs or physical servers.
+- For this example: 1 master node, 2 worker nodes.
 
-2. **Set up Necessary Roles**:
+#### 1.2. Networking:
+- Set static IPs for each node.
+- Ensure hostname resolution is set (either through DNS or `/etc/hosts`).
 
-   a. **Assign Permissions**:
-      1. While inside the `aro-cli` app registration, go to "API permissions."
-      2. Click "Add a permission," choose "My APIs," select the `aro-cluster` app, and then grant permissions.
-      3. Click "Add" and then "Done."
+#### 1.3. Load Balancer (Optional but recommended):
+- Setup a load balancer for distributing API requests to the master and for application traffic.
 
-   b. **Assign the Role**:
-      1. In the Azure Portal main page, search for "Subscriptions" and click on it.
-      2. Select your subscription.
-      3. In the left pane, under "Access control (IAM)," click on "Add" > "Add role assignment."
-      4. For the Role, select "Contributor."
-      5. In the "Select" field, type and select the name of your `aro-cli` app, and then click "Save."
+### **2. Install Prerequisites**:
 
-3. **Get Tenant and Subscription IDs**:
+#### 2.1. Docker or CRI-O:
+OpenShift supports container runtimes like Docker and CRI-O. Choose one and install it on all nodes.
 
-   a. In the Azure Portal, go to "Subscriptions."
-   b. Select your subscription.
-   c. In the overview tab, you can find both your Subscription ID and the Directory (tenant) ID. Note these down.
+#### 2.2. Dependencies:
+Install required dependencies on all nodes:
+```bash
+sudo yum install -y wget git net-tools bind-utils yum-utils iptables-services bridge-utils bash-completion kexec-tools sos psacct openssl-devel httpd-tools NetworkManager python-cryptography python2-pip python-devel python-passlib java-1.8.0-openjdk-headless "@Development Tools"
+```
 
-4. **Update the Terraform Script**:
+### **3. Install OpenShift**:
 
-   Now, you'll need to manually incorporate the IDs and secrets into your Terraform script (as mentioned in the previous response). Make sure not to expose these secrets in public repositories; consider using environment variables or Terraform variables to keep them secure.
+#### 3.1. Get OpenShift binaries:
+Download the OpenShift binaries and place them in your path (usually `/usr/local/bin` or `/usr/bin`):
+```bash
+wget https://github.com/openshift/origin/releases/download/v<version>/openshift-origin-client-tools-v<version>-<hash>-linux-64bit.tar.gz
+tar -xzvf openshift-origin-client-tools*.tar.gz
+sudo mv openshift-origin-client-tools-*/oc /usr/local/bin/
+sudo mv openshift-origin-client-tools-*/kubectl /usr/local/bin/
+```
 
-After performing the above steps in the Azure Portal, your Terraform script should have all the prerequisites set up, and you can initialize and apply the Terraform configuration.
+Replace `<version>` and `<hash>` with appropriate values.
+
+#### 3.2. Bootstrap the Cluster:
+On the master node:
+```bash
+oc cluster up --public-hostname=<master_public_IP> --skip-registry-check=true
+```
+
+### **4. Join Worker Nodes**:
+
+#### 4.1. Prepare Nodes:
+Ensure Docker or CRI-O is correctly set up on the worker nodes.
+
+#### 4.2. Join Cluster:
+On each worker node:
+```bash
+oc cluster join --master=<master_public_IP>
+```
+
+### **5. Post Installation**:
+
+#### 5.1. Router and Registry:
+Deploy the internal OpenShift router and Docker registry:
+```bash
+oc cluster add router
+oc cluster add registry
+```
+
+#### 5.2. Storage:
+If you want persistent storage, you may need to configure storage classes, persistent volumes, and other storage components suitable to your infrastructure.
+
+#### 5.3. Add Additional Components:
+You can install other OpenShift components like logging, monitoring, etc., as needed.
+
+---
+
+This guide provides a high-level overview of setting up a basic OpenShift cluster. Many detailed configurations, particularly around security, networking, and storage, are glossed over for simplicity.
+
+It's essential to always refer to the official OpenShift documentation for the version you're installing. The setup process can vary between versions, and the official documentation will provide the most accurate and detailed steps.
