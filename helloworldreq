@@ -1,0 +1,94 @@
+-----------------------------------------------------------------------------------------------------------
+Service Configuration:
+
+F5 Proxy Integration (APM/LTM):
+
+Application data classification: Confidential --> to realise the AAL2(SecurID + PKI), zone restricted Firewall concept & dealing with confidential data.
+
+F5 APM & F5 LTM: 
+a. McAfee Web Gateway configuration - Anti-Virus setting.
+b. LB Method - Least Connections.
+c. Persistence (Session stickiness)- No. 
+d. Health Monitor -  No.
+
+Containerization & GitOps:
+
+The Environment should be possible to spin up based on Infrastrcuture images stored in Artifact Repository (IaC).
+Keep (env. specific) application configuration outside of the image.
+Changing the configuration does not require re-deployment of the application and should support dynamic configuration.
+Save only non-sensitive configuration in ConfigMaps. For sensitive information (such as credentials), use the Secrets!
+
+Supplement: https://devstack.vwgroup.com/confluence/display/GEP/ArgoCD
+
+Substantial usage of GitOps workflow (ArgoCD --> consumption from gep-deploy-* namespaces as tech. shared service) to deploy applications & build the ancillary infrastrucures. Notification to connected communication channel after every sync. 
+
+Centralized Secret credentials management & governance demo by SecretManagement solution. No distribution of secrets containing confidential data within CI-CD pipeline. 
+
+Supplement: https://devstack.vwgroup.com/confluence/display/GEP/Test+Scenarios
+
+
+Consumption of ISTIO Service Mesh as technical shared service to demonstrate the following:
+
+a. Ingress Gateway Service derived from ISTIO Service Mesh implementation.
+b. Encrypt the traffic between all PODs in a namespace of a Cluster.
+c. Protect the communication between application components using mTLS.
+d. Traffic management & distributed tracing.
+e. The ability to define specific rules and policies for communication between services.
+
+Supplement: https://devstack.vwgroup.com/confluence/display/GEP/Service+Mesh
+
+Following best practices within OpenShift Platform (Application Reliability):
+
+a. Run the application/services more than 1 Replica.
+b. Ensure that application pods terminate gracefully.
+c. The deployment strategy should be Rolling Update.
+d. Efficient usages of Probes (Readiness, Liveness, StartUp (External dependencies healthcheck)) 
+
+-------------------------------------------------
+
+Storage & Databases:
+ 
+No persistent data on local mount. Demonstration of static or dynamic PV usage with standard RWX operations. 
+
+Usage of the below DBs: 
+a. Structured: RDBMS --> MySQL DB.
+b. Unstructured: Key-Value --> MongoDB. 
+
+----------------------------------------------------------------
+Service Observability, Monitoring & Logging:
+
+Expose a consolidated endpoint, which returns the full list of metrics (with label sets) and their values including the resource metrics & custom metrics for user defined workloads.
+
+Use Grafana to display the above scraped metric in a customized dashboard view.
+
+Usage of centralised logging solution MLaaS (Elastic Stack solution provided by GEP as tech. shared service) to forward and display & preserve the Logs. Differentiation of technical, business & security logs with different retention period.
+
+Supplement: https://devstack.vwgroup.com/confluence/display/GEP/Anbindung+von+MLaaS
+-----------------------------------------------------------------
+App Logic:
+
+Frontend:
+The frontend is a web application developed using HTML, CSS, and JavaScript. It allows users to view, create, and manage tasks. It communicates with the backend using REST API calls.
+
+Here's a simplified usecase:
+
+        Display a list of tasks.
+        Allow users to create new tasks.
+        Allow users to view task details.
+
+Backend:
+The backend is a Spring Boot application that provides the REST API for managing tasks. It interacts with a (relational or non-relational) database for storing task data and uses a persistent volume for storing task attachments. 
+
+Expose REST APIs:
+GET /api/tasks - Retrieve a list of tasks.
+POST /api/tasks - Create a new task.
+GET /api/tasks/:taskId - Retrieve details of a specific task.
+        
+        Use a DB database to store task information (task ID, title, description, status, etc.).
+        Utilize a persistent volume for storing task attachments (file uploads).
+       
+    Database:
+        Use DB to store task data (tasks).
+
+    Persistent Volume:
+        Store task attachments securely in a persistent volume to ensure data durability.
