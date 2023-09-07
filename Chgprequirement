@@ -1,0 +1,99 @@
+# Requirement Sheet
+
+## Service Configuration
+
+### F5 Proxy Integration (APM/LTM)
+
+- **Application Data Classification**: Confidential
+    - Implement AAL2 (SecurID + PKI)
+    - Zone-restricted Firewall concept
+- **F5 APM & F5 LTM Configurations**
+    - McAfee Web Gateway for Anti-Virus setting
+    - Load Balancing Method: Least Connections
+    - Session Persistence: No
+    - Health Monitoring: No
+
+**Supplement**: [F5 Documentation](https://devstack.vwgroup.com/confluence/display/GEP/ArgoCD)
+
+---
+
+## Containerization & GitOps
+
+- Infra spun up using Infrastructure-as-Code (IaC) images stored in Artifact Repository
+- Environment-specific application configurations should be outside of the image
+- Changing configurations should not require app re-deployment
+- Use ConfigMaps for non-sensitive configuration and Secrets for sensitive data
+
+**Supplement**: [Test Scenarios](https://devstack.vwgroup.com/confluence/display/GEP/Test+Scenarios)
+
+---
+
+## ISTIO Service Mesh
+
+- **Features**
+    - Ingress Gateway Service
+    - POD-to-POD traffic encryption
+    - mTLS for component communication
+    - Traffic management & distributed tracing
+    - Defining service communication rules and policies
+
+**Supplement**: [Service Mesh](https://devstack.vwgroup.com/confluence/display/GEP/Service+Mesh)
+
+---
+
+## OpenShift Platform (Application Reliability)
+
+- Multiple Replicas for applications/services
+- Graceful pod termination
+- Deployment Strategy: Rolling Update
+- Efficient use of Probes (Readiness, Liveness, StartUp)
+
+---
+
+## Storage & Databases
+
+- No local mount for persistent data
+- Use static or dynamic Persistent Volumes with standard RWX operations
+- **Databases**
+    - Structured: MySQL
+    - Unstructured: MongoDB
+
+---
+
+## Service Observability, Monitoring & Logging
+
+- Expose a consolidated metrics endpoint
+- Use Grafana for dashboard views
+- Centralized logging with MLaaS (Elastic Stack)
+    - Different log retention policies for technical, business, and security logs
+
+**Supplement**: [MLaaS Documentation](https://devstack.vwgroup.com/confluence/display/GEP/Anbindung+von+MLaaS)
+
+---
+
+## App Logic
+
+### Frontend
+
+- Web application using HTML, CSS, and JavaScript
+- Features:
+    - Display task list
+    - Create new tasks
+    - View task details
+
+### Backend
+
+- Spring Boot for REST API
+    - **Endpoints**
+        - GET /api/tasks
+        - POST /api/tasks
+        - GET /api/tasks/:taskId
+- Database for task data
+- Persistent Volume for task attachments
+
+---
+
+## Notes
+
+- All features should adhere to the supplements provided for each section.
+- The system should align with the stated best practices and recommended configurations.
