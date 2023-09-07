@@ -1,0 +1,1033 @@
+Description: >
+  This template deploys an ECS cluster to the provided VPC and subnets
+  using an Auto Scaling Group
+
+Parameters:
+  ConcourseName:
+    Description: Concourse Name used for namespace.
+    Type: String
+  OrgScope:
+    Description: Alphanumeric/hyphenated Organisational Scope. Used for tagging.
+    Type: String
+  FunctionalScope:
+    Description: Alphanumeric/hyphenated Functional Scope. Used for tagging.
+    Type: String
+  Environment:
+    Description: Environment Name. Used for tagging.
+    Type: String
+  Region:
+    Description: Region Name. Used for tagging.
+    Type: String
+  InstanceType:
+    Description: Which instance type should we use to build the ECS cluster?
+    Type: String
+    Default: m5d.xlarge
+  MinClusterSize:
+    Description: Minimum of running ECS instances
+    Type: Number
+    Default: 1
+  MaxClusterSize:
+    Description: Maximum of running ECS instances
+    Type: Number
+    Default: 10
+  DesiredClusterSize:
+    Description: Desired count of running ECS instances
+    Type: Number
+    Default: 1
+  RootEBSVolumeSize:
+    Description: Root EBS Volume Size
+    Type: Number
+    Default: 16
+  DockerEBSVolumeSize:
+    Description: Docker EBS Volume Size
+    Type: Number
+    Default: 60
+  VPC:
+    Description: Choose which VPC this ECS cluster should be deployed to
+    Type: AWS::EC2::VPC::Id
+  Subnets:
+    Description: Choose which subnets this ECS cluster should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+  SecurityGroups:
+    Description: Select the Security Group to use for the ECS cluster hosts
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  KeyName:
+    Description: SSH KeyPair Name
+    Type: String
+    Default: ''
+  CreateSharedStorage:
+    Type: String
+    Description: ELB Scheme
+    Default: no
+    AllowedValues:
+      - yes
+      - no
+  ASGMetricName:
+    Type: String
+    Description: Metric name used for AutoScaling
+    AllowedValues:
+      - CPUUtilization
+      - MemoryUtilization
+    Default: CPUUtilization
+  ASGScaleUpMetricNamespace:
+    Type: String
+    Description: Metric namespace used for AutoScaling ScaleUp
+    AllowedValues:
+      - AWS/ECS
+    Default: AWS/ECS
+  ASGScaleDownMetricNamespace:
+    Type: String
+    Description: Metric namespace used for AutoScaling ScaleDown
+    AllowedValues:
+      - AWS/ECS
+    Default: AWS/ECS
+  ASGScaleUpMetricStatistic:
+    Type: String
+    Description: Metric statistic used for AutoScaling ScaleUp
+    Default: Average
+  ASGScaleDownMetricStatistic:
+    Type: String
+    Description: Metric statistic used for AutoScaling ScaleDown
+    Default: Average
+  ASGScaleUpMetricPeriod:
+    Type: Number
+    Description: Period in seconds for ASG metric evaluation in Scale Up
+    Default: 60
+  ASGScaleDownMetricPeriod:
+    Type: Number
+    Description: Period in seconds for ASG metric evaluation in Scale Down
+    Default: 60
+  ASGScaleUpMetricEvaluationPeriods:
+    Type: Number
+    Description: Number of metric evaluation periods in Scale Up
+    Default: 1
+  ASGScaleDownMetricEvaluationPeriods:
+    Type: Number
+    Description: Number of metric evaluation periods in Scale Down
+    Default: 1
+  ASGScaleUpThreshold:
+    Type: Number
+    Description: Scale Up Threshold
+    Default: 70
+  ASGScaleDownThreshold:
+    Type: Number
+    Description: Scale Down Threshold
+    Default: 30
+  ASGScaleUpScalingAdjustmentType:
+    Type: String
+    Description: Scale Up adjustment type
+    AllowedValues:
+      - PercentChangeInCapacity
+      - ChangeInCapacity
+      - ExactCapacity
+    Default: PercentChangeInCapacity
+  ASGScaleDownScalingAdjustmentType:
+    Type: String
+    Description: Scale Down adjustment type
+    AllowedValues:
+      - PercentChangeInCapacity
+      - ChangeInCapacity
+      - ExactCapacity
+    Default: PercentChangeInCapacity
+  ASGScaleUpScalingAdjustment:
+    Type: Number
+    Description: Scale Up adjustment
+    Default: 30
+  ASGScaleDownScalingAdjustment:
+    Type: Number
+    Description: Scale Down adjustment
+    Default: -30
+  RecommendedImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Description: Use an Image from SSM Parameter Store
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
+  ImageId:
+    Type: String
+    Description: ECS Amazon2 AMI Image ID
+    Default: ''
+
+Conditions:
+  UseSharedStorage:
+    !Equals [!Ref CreateSharedStorage, yes]
+  DontUseSharedStorage:
+    !Not [!Equals [!Ref CreateSharedStorage, yes]]
+  UseCustomAMI:
+    !Not [!Equals [!Ref ImageId, '']]
+  UseKeyPair:
+    !Not [!Equals [!Ref KeyName, '']]
+
+Resources:
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub ecs-${OrgScope}-${FunctionalScope}-${ConcourseName}-${Environment}
+
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref Subnets
+      LaunchTemplate:
+        LaunchTemplateId: !Ref ECSLaunchTemplate
+        Version: !GetAtt ECSLaunchTemplate.LatestVersionNumber
+      MinSize: !Ref MinClusterSize
+      MaxSize: !Ref MaxClusterSize
+      Tags:
+        - Key: Name
+          Value: !Join
+          - '.'
+          - - 'ec2'
+            - !Ref OrgScope
+            - !Ref FunctionalScope
+            - !Ref ConcourseName
+            - !Ref Environment
+            - !Ref Region
+          PropagateAtLaunch: true  
+      Tags:
+      - Key: Name
+        Value: !Sub 'ec2.${OrgScope}.${FunctionalScope}.${ConcourseName}-web.${Environment}'
+        PropagateAtLaunch: true
+      - Key: OrgScope
+        Value: !Ref OrgScope
+        PropagateAtLaunch: true
+      - Key: FunctionalScope
+        Value: !Ref FunctionalScope
+        PropagateAtLaunch: true
+      - Key: Environment
+        Value: !Ref Environment
+        PropagateAtLaunch: true
+      - Key: Region
+        Value: !Ref Region
+        PropagateAtLaunch: true
+      - Key: ModuleName
+        Value: !Ref ConcourseName
+        PropagateAtLaunch: true
+      - Key: GITC-VulnScanTool
+        Value: tenable_io
+        PropagateAtLaunch: true
+      - Key: GITC-ResourceName
+        Value: concourse
+        PropagateAtLaunch: true 
+      - Key: GITC-ApplicationID
+        Value: platformcicd
+        PropagateAtLaunch: true 
+      - Key: GITC-RiskClass
+        Value: 3
+        PropagateAtLaunch: true  
+      - Key: GITC-DataClassification
+        Value: internal
+        PropagateAtLaunch: true
+      - Key: GITC-PersonalData
+        Value: true
+        PropagateAtLaunch: true
+      - Key: GITC-ProdStage
+        Value: false
+        PropagateAtLaunch: true
+      - Key: GITC-OperationsContact
+        Value: "GITC BP DevOps AWS Support VW Group"
+        PropagateAtLaunch: true
+      - Key: GITC-SecurityContact
+        Value: basicplatform-support.viti.r.india@volkswagen.co.in
+        PropagateAtLaunch: true
+      - Key: Tier
+        Value: application
+        PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'false'
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '1'
+        MinInstancesInService: !Ref 'MinClusterSize'
+        MinSuccessfulInstancesPercent: '100'
+        SuspendProcesses:
+          - HealthCheck
+          - ReplaceUnhealthy
+          - AlarmNotification
+          - AZRebalance
+          - ScheduledActions
+        WaitOnResourceSignals: 'false'
+
+  LaunchLifeCyclehook:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup'
+      DefaultResult: ABANDON
+      HeartbeatTimeout: 1800
+      LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
+
+  TerminationLifeCycleHook:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup'
+      DefaultResult: ABANDON
+      HeartbeatTimeout: 1800
+      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
+
+  ECSLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${AWS::StackName}
+      LaunchTemplateData:
+        ImageId: !If
+          - UseCustomAMI
+          - !Ref ImageId
+          - !Ref RecommendedImageId
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds: !Ref SecurityGroups
+        IamInstanceProfile:
+          Arn: !GetAtt
+            - ECSInstanceProfile
+            - Arn
+        KeyName: !If
+          - UseKeyPair
+          - !Ref KeyName
+          - !Ref AWS::NoValue
+        BlockDeviceMappings:
+          - DeviceName: "/dev/xvda"
+            Ebs:
+              VolumeSize: !Ref RootEBSVolumeSize
+              VolumeType: gp2
+          - DeviceName: "/dev/xvdcz"
+            Ebs:
+              VolumeType: gp2
+              VolumeSize: !Ref DockerEBSVolumeSize
+
+        UserData:
+          "Fn::Base64": !Sub |
+            #!/bin/bash
+            # Lambda reads the ECS Cluster name from UserData
+            echo ECS_CLUSTER=${ECSCluster} 
+            yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            yum install -y aws-cfn-bootstrap hibagent nfs-utils perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https perl-Digest-SHA.x86_64 unzip nano jq wget python-pip
+            /usr/bin/enable-ec2-spot-hibernation
+            curl https://aws-cloudwatch.s3.amazonaws.com/downloads/CloudWatchMonitoringScripts-1.2.2.zip -O
+            unzip CloudWatchMonitoringScripts-1.2.2.zip -d /usr/local/bin && \
+            rm CloudWatchMonitoringScripts-1.2.2.zip
+            pip install awscli
+            yum -y update
+            /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchTemplate
+            /opt/aws/bin/cfn-signal -e 0 --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
+            wget https://github.com/concourse/concourse/releases/download/v7.8.2/fly-7.8.2-linux-amd64.tgz
+            tar -zxf fly-7.8.2-linux-amd64.tgz
+            mv fly /usr/bin/fly
+            rm -rf fly-7.8.2-linux-amd64.tgz
+
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+            packages:
+              yum:
+                awslogs: []
+            files:
+              /usr/local/bin/tsa.sh:
+                  mode: "000700"
+                  owner: "root"
+                  group: "root"
+                  content: |
+                    #!/bin/bash
+                    set -e -x
+
+                    SM=$CONCOURSE_TSA_SECRETSMANAGER_SECRET
+                    SECRET=$(aws secretsmanager list-secrets | jq -r ".SecretList[] | select(.Name==\"$SM\") | .Name")
+
+                    mkdir -p /keys/worker /keys/web
+                    cd /keys
+                    if [ -z "$SECRET" ] ; then
+                        docker run --rm -v /keys/web:/keys concourse/concourse \
+                          generate-key -t rsa -f /keys/session_signing_key
+
+                        docker run --rm -v /keys/web:/keys concourse/concourse \
+                          generate-key -t ssh -f /keys/tsa_host_key
+
+                        docker run --rm -v /keys/worker:/keys concourse/concourse \
+                          generate-key -t ssh -f /keys/worker_key
+
+                        cp /keys/worker/worker_key.pub /keys/web/authorized_worker_keys
+                        cp /keys/web/tsa_host_key.pub /keys/worker
+
+                        jq \
+                            --arg key0 'web_session_signing_key' \
+                            --arg value0 "$(base64 -w 0 /keys/web/session_signing_key)" \
+                            --arg key1 'web_tsa_host_key' \
+                            --arg value1 "$(base64 -w 0 /keys/web/tsa_host_key)" \
+                            --arg key2 'web_tsa_host_key_pub' \
+                            --arg value2 "$(base64 -w 0 /keys/web/tsa_host_key.pub)" \
+                            --arg key3 'web_authorized_worker_keys' \
+                            --arg value3 "$(base64 -w 0 /keys/web/authorized_worker_keys)" \
+                            --arg key4 'worker_worker_key' \
+                            --arg value4 "$(base64 -w 0 /keys/worker/worker_key)" \
+                            --arg key5 'worker_worker_key_pub' \
+                            --arg value5 "$(base64 -w 0 /keys/worker/worker_key.pub)" \
+                            --arg key6 'worker_tsa_host_key_pub' \
+                            --arg value6 "$(base64 -w 0 /keys/worker/tsa_host_key.pub)" \
+                                '. | .[$key0]=$value0 | .[$key1]=$value1 | .[$key2]=$value2 | .[$key3]=$value3 | .[$key4]=$value4  | .[$key5]=$value5 | .[$key6]=$value6 '  <<<'{}' >/keys/tsa.json
+                        aws secretsmanager create-secret --name "$SM" --secret-string file:///keys/tsa.json || true
+                        aws secretsmanager put-secret-value --secret-id "$SM" --secret-string file:///keys/tsa.json
+                    else
+                        aws secretsmanager get-secret-value --secret-id "$SM" --query SecretString --output text >/keys/tsa.json
+                        cat tsa.json | jq -r .web_session_signing_key | base64 -d > /keys/web/session_signing_key
+                        cat tsa.json | jq -r .web_tsa_host_key | base64 -d > /keys/web/tsa_host_key
+                        cat tsa.json | jq -r .web_tsa_host_key_pub | base64 -d > /keys/web/tsa_host_key.pub
+                        cat tsa.json | jq -r .web_authorized_worker_keys | base64 -d > /keys/web/authorized_worker_keys
+                        cat tsa.json | jq -r .worker_worker_key | base64 -d > /keys/worker/worker_key
+                        cat tsa.json | jq -r .worker_worker_key_pub | base64 -d > /keys/worker/worker_key.pub
+                        cat tsa.json | jq -r .worker_tsa_host_key_pub | base64 -d > /keys/worker/tsa_host_key.pub
+                    fi
+
+                    chmod 700 /keys /keys/worker /keys/web
+                    chmod 600 /keys/worker/* /keys/web/*
+
+              /usr/local/bin/cleanup_docker_volumes.sh:
+                  mode: "000755"
+                  owner: "root"
+                  group: "root"
+                  content: !Sub |
+                    #!/bin/bash
+                    # Removing exited containers
+                    echo "Removing unused containers.."
+                    docker ps -qa --no-trunc --filter "status=exited"  | xargs -r docker rm
+
+                    RUNNING_VOLS_FILE=$(mktemp)
+
+                    #collect all volumes currently in use by running containers
+
+                    docker ps -q | while read c ; do docker inspect $c | jq -r '.[].Mounts[].Name' ; done  | sort | uniq | grep -v null > $RUNNING_VOLS_FILE
+
+                    echo "Removing unused shared volumes.."
+                    docker volume ls -q | while read volume ; do
+                      grep -q "$volume" $RUNNING_VOLS_FILE
+                      RET=$?
+                      if [ "$RET" != "0" ] ; then
+                        echo "$volume"
+                        docker volume rm $volume
+                      fi
+                    done
+
+                    rm -f $RUNNING_VOLS_FILE
+
+              /usr/local/bin/updateInstance.sh:
+                  mode: "000755"
+                  owner: "root"
+                  group: "root"
+                  content: |
+                    #!/bin/bash -l
+
+                    #Update the instance
+                    printf '\n \nUpdating Instance\n'
+                    echo `date`
+                    
+                    STATUS=$(yum -y update)
+                    echo $STATUS
+
+                    if [[ "$STATUS" == *'Complete!' ]]; then
+                            TEXT="Instance Update is successful"
+                    elif [[ "$STATUS" == *'No packages marked for update'* ]]; then
+                            TEXT="No Update required"
+                    else
+                            TEXT="Instance Update failed. Kindly check logs from updateInstanceLog.txt file"
+                    fi
+
+                    WEBHOOK_URL=$(aws secretsmanager get-secret-value --secret-id $ROCKETCHATCRED  | jq -r '.SecretString' | jq -r .webhook_url)
+                    CHANNEL=$(aws secretsmanager get-secret-value --secret-id $ROCKETCHATCRED  | jq -r '.SecretString' | jq -r .channel)
+                    AUTH_TOKEN=$(aws secretsmanager get-secret-value --secret-id $ROCKETCHATCRED  | jq -r '.SecretString' | jq -r .auth_token)
+                    USER_ID=$(aws secretsmanager get-secret-value --secret-id $ROCKETCHATCRED  | jq -r '.SecretString' | jq -r .user_id)
+
+                    ID=$(ec2-metadata --instance-id | sed 's/\binstance-id: \b//g')
+
+                    curl -H "X-Auth-Token: "${AUTH_TOKEN}"" \
+                    -H "X-User-Id: "${USER_ID}"" \
+                    -H "Content-type:application/json" "${WEBHOOK_URL}" \
+                    -d '{ "channel": "'"${CHANNEL}"'", "text": "'" "INSTANCE_ID" : ${ID}, \n "REGION" : ${AWS_DEFAULT_REGION}, \n "ENVIRONMENT" : ${ENV}, \n "ORG_SCOPE" : ${ORG_SCOPE}, \n "FUNC_SCOPE" : ${FUNC_SCOPE}, \n "MODULE_NAME" : ${CONCOURSE_NAME}, \n "INSTANCE_UPDATE_STATUS" : ${TEXT} "'" }'
+
+              /usr/local/bin/append-environment-var.sh:
+                  mode: "000755"
+                  owner: "root"
+                  group: "root"
+                  content: |
+                    #!/bin/bash
+                    cat << MYVAR >> ~/.bashrc
+                    export SM=$CONCOURSE_LOCALAUTH_SECRETSMANAGER_SECRET
+                    export ROCKETCHATCRED=$ROCKETCHAT_SECRETSMANAGER_SECRET
+                    export CONCOURSE_NAME=$ConcourseName
+                    export ORG_SCOPE=$OrgScope
+                    export FUNC_SCOPE=$FunctionalScope
+                    export ENV=$Environment
+                    export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+                    MYVAR      
+
+              /usr/local/bin/update_ecs_conf.sh:
+                  mode: "000755"
+                  owner: "root"
+                  group: "root"
+                  content: !Sub |
+                    #!/bin/bash
+
+                    # add instance to ecs cluster
+                    echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+                    # configure ECS image cleanup
+                    echo ECS_IMAGE_CLEANUP_INTERVAL=10m >> /etc/ecs/ecs.config
+                    echo ECS_IMAGE_MINIMUM_CLEANUP_AGE=15m >> /etc/ecs/ecs.config
+                    echo ECS_NUM_IMAGES_DELETE_PER_CYCLE=10 >> /etc/ecs/ecs.config
+
+              /usr/local/bin/create_alarms.sh:
+                  mode: "000755"
+                  owner: "root"
+                  group: "root"
+                  content: !Sub |
+                    #!/bin/bash
+
+                    instance_id=$(wget -q -O- http://169.254.169.254/latest/meta-data/instance-id)
+
+                    aws cloudwatch put-metric-alarm --alarm-name DiskSpaceAlarm_"$instance_id" --alarm-description "Alarm when disk usage exceeds 80 percent" \
+                     --metric-name DiskSpaceUtilization --namespace "System/Linux" --statistic Average --period 300 --threshold 80 \
+                     --comparison-operator GreaterThanThreshold  --dimensions "Name=Filesystem,Value=/dev/nvme0n1p1" \
+                     "Name=InstanceId,Value=$instance_id" "Name=MountPath,Value=/" --evaluation-periods 1  \
+                     --alarm-actions ${SnsTopic} --unit Percent --region ${AWS::Region}
+
+                    aws cloudwatch put-metric-alarm --alarm-name MemoryUsageAlarm_"$instance_id" --alarm-description "Alarm when memory usage exceeds 85 percent" \
+                     --metric-name MemoryUtilization --namespace "System/Linux" --statistic Average --period 300 --threshold 85 \
+                     --comparison-operator GreaterThanThreshold  --dimensions "Name=InstanceId,Value=$instance_id" --evaluation-periods 1  \
+                     --alarm-actions ${SnsTopic} --unit Percent --region ${AWS::Region}
+
+              "/etc/cfn/cfn-hup.conf":
+                    mode: 000400
+                    owner: root
+                    group: root
+                    content: !Sub |
+                      [main]
+                      stack=${AWS::StackId}
+                      region=${AWS::Region}
+
+              "/etc/cfn/hooks.d/cfn-auto-reloader.conf":
+                    content: !Sub |
+                      [cfn-auto-reloader-hook]
+                      triggers=post.update
+                      path=Resources.ECSLaunchTemplate.Metadata.AWS::CloudFormation::Init
+                      action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchTemplate
+
+              "/etc/awslogs/awscli.conf":
+                    content: !Sub |
+                      [plugins]
+                      cwlogs = cwlogs
+                      [default]
+                      region = ${AWS::Region}
+
+              "/etc/awslogs/awslogs.conf":
+                    content: !Sub |
+                      [general]
+                      state_file = /var/lib/awslogs/agent-state
+
+                      [/var/log/dmesg]
+                      file = /var/log/dmesg
+                      log_group_name = ${ECSCluster}-/var/log/dmesg
+                      log_stream_name = ${ECSCluster}
+
+                      [/var/log/messages]
+                      file = /var/log/messages
+                      log_group_name = ${ECSCluster}-/var/log/messages
+                      log_stream_name = ${ECSCluster}
+                      datetime_format = %b %d %H:%M:%S
+
+                      [/var/log/docker]
+                      file = /var/log/docker
+                      log_group_name = ${ECSCluster}-/var/log/docker
+                      log_stream_name = ${ECSCluster}
+                      datetime_format = %Y-%m-%dT%H:%M:%S.%f
+
+                      [/var/log/ecs/ecs-init.log]
+                      file = /var/log/ecs/ecs-init.log.*
+                      log_group_name = ${ECSCluster}-/var/log/ecs/ecs-init.log
+                      log_stream_name = ${ECSCluster}
+                      datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                      [/var/log/ecs/ecs-agent.log]
+                      file = /var/log/ecs/ecs-agent.log.*
+                      log_group_name = ${ECSCluster}-/var/log/ecs/ecs-agent.log
+                      log_stream_name = ${ECSCluster}
+                      datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+                      [/var/log/ecs/audit.log]
+                      file = /var/log/ecs/audit.log.*
+                      log_group_name = ${ECSCluster}-/var/log/ecs/audit.log
+                      log_stream_name = ${ECSCluster}
+                      datetime_format = %Y-%m-%dT%H:%M:%SZ
+            commands:
+              100_tsa_secret:
+                command: !Sub "bash /usr/local/bin/tsa.sh"
+                env:
+                  AWS_DEFAULT_REGION: !Ref AWS::Region
+                  CONCOURSE_TSA_SECRETSMANAGER_SECRET: !Sub '/concourse/${OrgScope}-${FunctionalScope}-${ConcourseName}-${Environment}/tsa-keys'
+              200_update_ecs_config:
+                command: !Sub "bash /usr/local/bin/update_ecs_conf.sh"
+              300_installing_metrics_cron:
+                command: !Sub "echo '* * * * * /usr/local/bin/aws-scripts-mon/mon-put-instance-data.pl --mem-util --disk-space-util --disk-path=/ --from-cron' | crontab"
+              400_cleanup_docker_volumes:
+                command: !Sub "crontab -l | { cat; echo '* * * * * /usr/local/bin/cleanup_docker_volumes.sh'; } | crontab -"
+              500_create_alarms:
+                command: !Sub "bash /usr/local/bin/create_alarms.sh"
+              600_instance_update:
+                command: !Sub "crontab -l | { cat; echo '0 5 * * * /usr/local/bin/updateInstance.sh >>/usr/local/bin/updateInstanceLog.txt 2>&1'; } | crontab -"               
+              700_append_environment_var:
+                command: !Sub "bash /usr/local/bin/append-environment-var.sh"
+                env:
+                  AWS_DEFAULT_REGION: !Sub ${Region}
+                  CONCOURSE_LOCALAUTH_SECRETSMANAGER_SECRET: !Sub '/concourse/${OrgScope}-${FunctionalScope}-${ConcourseName}-${Environment}/local-auth-secrets'
+                  ROCKETCHAT_SECRETSMANAGER_SECRET: !Sub '/concourse/${OrgScope}-${FunctionalScope}-${ConcourseName}-${Environment}/rocketchat'
+                  OrgScope: !Sub ${OrgScope}
+                  FunctionalScope: !Sub ${FunctionalScope}
+                  Environment: !Sub ${Environment}
+                  ConcourseName: !Sub ${ConcourseName}
+              800_source_bashrc:
+                command: !Sub "source  ~/.bashrc"  
+            services:
+                sysvinit:
+                  cfn-hup:
+                    enabled: true
+                    ensureRunning: true
+                    files:
+                      - /etc/cfn/cfn-hup.conf
+                      - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+                  awslogsd:
+                    enabled: true
+                    ensureRunning: true
+                    files:
+                      - /etc/awslogs/awslogs.conf
+                      - /etc/awslogs/awscli.conf
+
+  ECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      RoleName: !Sub rle.${OrgScope}.${FunctionalScope}.${ConcourseName}-ecs-runtime.${Environment}
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      AssumeRolePolicyDocument: |
+        {
+          "Statement": [{
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ec2.amazonaws.com"
+            }
+          }]
+        }
+      Policies:
+        - PolicyName: ecs-inst
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:CreateCluster
+                  - ecs:DeregisterContainerInstance
+                  - ecs:DiscoverPollEndpoint
+                  - ecs:Poll
+                  - ecs:RegisterContainerInstance
+                  - ecs:StartTelemetrySession
+                  - ecs:Submit*
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - iam:PassRole
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:GetAuthorizationToken
+                  - ssm:DescribeAssociation
+                  - ssm:GetDeployablePatchSnapshotForInstance
+                  - ssm:GetDocument
+                  - ssm:GetManifest
+                  - ssm:GetParametersByPath
+                  - ssm:ListAssociations
+                  - ssm:ListInstanceAssociations
+                  - ssm:PutInventory
+                  - ssm:PutComplianceItems
+                  - ssm:PutConfigurePackageResult
+                  - ssm:UpdateAssociationStatus
+                  - ssm:UpdateInstanceAssociationStatus
+                  - ssm:UpdateInstanceInformation
+                  - ec2messages:AcknowledgeMessage
+                  - ec2messages:DeleteMessage
+                  - ec2messages:FailMessage
+                  - ec2messages:GetEndpoint
+                  - ec2messages:GetMessages
+                  - ec2messages:SendReply
+                  - cloudwatch:PutMetricData
+                  - ec2:DescribeInstanceStatus
+                  - ds:CreateComputer
+                  - ds:DescribeDirectories
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - s3:Put*
+                  - s3:AbortMultipartUpload
+                  - s3:List*
+                  - s3:Get*
+                  - dynamodb:*
+                  - cloudwatch:PutMetricAlarm
+                  - secretsmanager:*
+                  - ec2:DescribeInstances
+                  - ec2:GetMessages
+                  - ecr:*
+                  - lambda:InvokeFunction
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket*
+                  - sns:ListTopics
+                  - sns:Subscribe
+                  - sns:Unsubscribe
+                  - sqs:CreateQueue
+                  - sqs:DeleteQueue
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:ListQueues
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:SetQueueAttributes
+                  - ssm:GetParameter*
+                  - ssm:UpdateInstanceInformation
+                  - ssmmessages:*
+                  - sts:AssumeRole
+                  - codecommit:*
+                  - route53:*
+                  - elasticloadbalancing:*
+                  - autoscaling:CompleteLifecycleAction
+                  - autoscaling:AttachLoadBalancers
+                  - autoscaling:AttachLoadBalancerTargetGroups
+                  - autoscaling:CreateAutoScalingGroup
+                  - autoscaling:DeleteAutoScalingGroup
+                  - autoscaling:DeleteLifecycleHook
+                  - autoscaling:DeletePolicy
+                  - autoscaling:DeleteTags
+                  - autoscaling:DescribeAutoScalingGroups
+                  - autoscaling:DescribeAutoScalingInstances
+                  - autoscaling:DescribeLaunchConfigurations
+                  - autoscaling:DescribeScalingActivities
+                  - autoscaling:DescribeScheduledActions
+                  - autoscaling:DescribeLifecycleHooks
+                  - autoscaling:DescribePolicies
+                  - autoscaling:*Tags
+                  - autoscaling:DetachLoadBalancers
+                  - autoscaling:DetachLoadBalancerTargetGroups
+                  #- autoscaling:GetAsgForInstance
+                  - autoscaling:PutLifecycleHook
+                  - autoscaling:PutScalingPolicy
+                  - autoscaling:ResumeProcesses
+                  - autoscaling:SetDesiredCapacity
+                  - autoscaling:SuspendProcesses
+                  - autoscaling:TerminateInstanceInAutoScalingGroup
+                  - autoscaling:UpdateAutoScalingGroup                  
+                Resource: "*"
+        - PolicyName: ecs-artifact-bucket
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub 'arn:aws:s3:::bkt.${OrgScope}.${FunctionalScope}.concourse-artifacts.${AWS::Region}.${Environment}'
+                  - !Sub 'arn:aws:s3:::bkt.${OrgScope}.${FunctionalScope}.concourse-artifacts.${AWS::Region}.${Environment}/*'
+
+  ECSInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: ECSInstanceProfile
+      Path: /
+      Roles:
+        - !Ref ECSRole
+
+  ECSServiceAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action:
+          - 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service:
+            - application-autoscaling.amazonaws.com
+      Path: /
+      Policies:
+      - PolicyName: ecs-service-autoscaling
+        PolicyDocument:
+          Statement:
+            Effect: Allow
+            Action:
+            - application-autoscaling:*
+            - cloudwatch:DescribeAlarms
+            - cloudwatch:PutMetricAlarm
+            - ecs:DescribeServices
+            - ecs:UpdateService
+            Resource: "*"
+
+  LambdaPolicy:
+    Type: AWS::IAM::Policy
+    DependsOn:
+      - LifeCycleLambdaRole
+    Properties:
+      PolicyName: CFNCustomDBUserProviderPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - autoscaling:CompleteLifecycleAction
+              - autoscaling:DescribeScalingActivities
+              - autoscaling:RecordLifecycleActionHeartbeat
+              - ecs:UpdateContainerInstancesState
+              - ecs:Describe*
+              - ecs:List*
+            Resource:
+              - '*'
+      Roles:
+        - !Ref 'LifeCycleLambdaRole'
+
+  LifeCycleLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+            - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+
+  LifecycleLaunchLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub fnc-${ConcourseName}-${Environment}-ecs-lc-launch
+      Description: Confirms a newly launched instance has joined the ECS Cluster showing connected and Active during Autoscaling operations
+      Code: ../lambda/asg-lifecycle-hooks/.
+      Handler: ecs-instance-launch.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt 'LifeCycleLambdaRole.Arn'
+      Runtime: python3.9
+      Timeout: '900'
+
+  LifecycleLaunchLambdaPermissionEventNewInstanceHealth:
+    Type: AWS::Lambda::Permission
+    DependsOn: LifecycleTerminateLambdaPermissionTwo
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 'LifecycleLaunchLambda.Arn'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt 'EventInvokeNewInstanceHealth.Arn'
+
+  LifecycleLauncheLambdaPermissionEventContinueNewInstanceHealth:
+    Type: AWS::Lambda::Permission
+    DependsOn: LifecycleLaunchLambdaPermissionEventNewInstanceHealth
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 'LifecycleLaunchLambda.Arn'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt 'EventContinueNewInstanceHealth.Arn'
+
+  LifecycleTerminateLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub fnc-${ConcourseName}-${Environment}-ecs-lc-terminate
+      Code: ../lambda/asg-lifecycle-hooks/.
+      Handler: ecs-instance-terminate.lambda_handler
+      Description: Manages draining ECS Cluster instances and cluster health checks during Autoscaling operations
+      Handler: ecs-instance-terminate.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt 'LifeCycleLambdaRole.Arn'
+      Runtime: python3.9
+      Timeout: '900'
+
+  LifecycleTerminateLambdaPermissionEventContinueClusterDrain:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 'LifecycleTerminateLambda.Arn'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt 'EventContinueClusterDrain.Arn'
+
+  LifecycleTerminateLambdaPermissionTwo:
+    Type: AWS::Lambda::Permission
+    DependsOn: LifecycleTerminateLambdaPermissionEventContinueClusterDrain
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 'LifecycleTerminateLambda.Arn'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt 'EventInvokeClusterDrain.Arn'
+
+
+  EventContinueClusterDrain:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: 'Invokes a Lambda Function to continue draining the ECS cluster
+        when our initial Lambda function has timed out '
+      EventPattern:
+        detail:
+          eventName:
+            - RecordLifecycleActionHeartbeat
+          eventSource:
+            - autoscaling.amazonaws.com
+          requestParameters:
+            autoScalingGroupName:
+            - !Ref 'ECSAutoScalingGroup'
+            lifecycleHookName:
+            - !Ref 'TerminationLifeCycleHook'
+        detail-type:
+          - AWS API Call via CloudTrail
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 'LifecycleTerminateLambda.Arn'
+          Id: !Join
+            - '-'
+            - - !Sub ${ConcourseName}-${Environment}
+              - InvokeClusterDrain
+
+  EventContinueNewInstanceHealth:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: 'Invokes a Lambda Function to check a newly launched instances
+        healt when our initial Lambda function has timed out '
+      EventPattern:
+        detail:
+          eventName:
+            - RecordLifecycleActionHeartbeat
+          eventSource:
+            - autoscaling.amazonaws.com
+          requestParameters:
+            autoScalingGroupName:
+            - !Ref 'ECSAutoScalingGroup'
+            lifecycleHookName:
+            - !Ref 'LaunchLifeCyclehook'
+        detail-type:
+          - AWS API Call via CloudTrail
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 'LifecycleLaunchLambda.Arn'
+          Id: !Join
+            - '-'
+            - - !Sub ${ConcourseName}-${Environment}
+              - InvokeNewInstanceHealth
+
+  EventInvokeClusterDrain:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Invokes a Lambda Function to handle draining the ECS cluster instance
+        upon termination
+      EventPattern:
+        detail:
+          AutoScalingGroupName:
+          - !Ref 'ECSAutoScalingGroup'
+        detail-type:
+          - EC2 Instance-terminate Lifecycle Action
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 'LifecycleTerminateLambda.Arn'
+          Id: !Join
+          - '-'
+          - - !Sub ${ConcourseName}-${Environment}
+            - Drain
+
+  EventInvokeNewInstanceHealth:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Invokes a Lambda Function to check a newly launched instances health
+        during autoscaling
+      EventPattern:
+        detail:
+          AutoScalingGroupName:
+          - !Ref 'ECSAutoScalingGroup'
+        detail-type:
+          - EC2 Instance-launch Lifecycle Action
+        source:
+          - aws.autoscaling
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 'LifecycleLaunchLambda.Arn'
+          Id: !Join
+            - '-'
+            - - !Sub ${ConcourseName}-${Environment}
+              - Launch
+
+  AsgAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Scale-Up if ${ASGScaleUpMetricNamespace} > ${ASGScaleUpThreshold} for ${ASGScaleUpMetricEvaluationPeriods} x ${ASGScaleUpMetricPeriod}
+      MetricName: !Ref ASGMetricName
+      Namespace: !Ref ASGScaleUpMetricNamespace
+      Statistic: !Ref ASGScaleUpMetricStatistic
+      Period: !Ref ASGScaleUpMetricPeriod
+      EvaluationPeriods: !Ref ASGScaleUpMetricEvaluationPeriods
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: !Ref ASGScaleUpThreshold
+      AlarmActions:
+        - !Ref 'ServerScaleUpPolicy'
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+
+  AsgAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Scale-Down if ${ASGScaleDownMetricNamespace} < ${ASGScaleDownThreshold} for ${ASGScaleDownMetricEvaluationPeriods} x ${ASGScaleDownMetricPeriod}
+      MetricName: !Ref ASGMetricName
+      Namespace: !Ref ASGScaleDownMetricNamespace
+      Statistic: !Ref ASGScaleDownMetricStatistic
+      Period: !Ref ASGScaleDownMetricPeriod
+      EvaluationPeriods: !Ref ASGScaleDownMetricEvaluationPeriods
+      ComparisonOperator: LessThanThreshold
+      Threshold: !Ref ASGScaleDownThreshold
+      AlarmActions:
+        - !Ref 'ServerScaleDownPolicy'
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+
+  ServerScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: !Ref ASGScaleUpScalingAdjustmentType
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup'
+      Cooldown: '600'
+      ScalingAdjustment: !Ref ASGScaleUpScalingAdjustment
+
+  ServerScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: !Ref ASGScaleDownScalingAdjustmentType
+      AutoScalingGroupName: !Ref 'ECSAutoScalingGroup'
+      Cooldown: '600'
+      ScalingAdjustment: !Ref ASGScaleDownScalingAdjustment
+
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ConcourseName}-${Environment}-alarms
+
+Outputs:
+
+  Cluster:
+    Description: A reference to the ECS cluster
+    Value: !Ref ECSCluster
+
+  ECSServiceAutoScalingRole:
+    Description: A reference to ECS service auto scaling role
+    Value: !GetAtt ECSServiceAutoScalingRole.Arn
+
+  ECSAutoScalingGroupName:
+    Description: A reference to ECS AutoScaling Group Name
+    Value: !Ref ECSAutoScalingGroup
