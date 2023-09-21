@@ -1,3 +1,48 @@
+ConfigMap
+=========
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: python-app-config
+data:
+  CONFIG_VARIABLE: "some-value"  # Replace with your actual configuration
+
+
+
+PV & PVC
+========
+
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: python-app-pv
+spec:
+  capacity:
+    storage: 1Gi  # Adjust as needed
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/data/python-app"  # Adjust as needed
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: python-app-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi  # Should match the PV storage capacity
+
+
+
+Deployment Manifest
+===================
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,6 +62,25 @@ spec:
         image: <your-registry>/<your-image>:<your-tag>
         ports:
         - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: app-storage
+          mountPath: /app/data
+      volumes:
+      - name: config-volume
+        configMap:
+          name: python-app-config
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: python-app-pvc
 
 ---
 apiVersion: v1
@@ -27,7 +91,7 @@ spec:
   selector:
     app: python-app
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80
+  - protocol: TCP
+    port: 80
+    targetPort: 80
   type: LoadBalancer
