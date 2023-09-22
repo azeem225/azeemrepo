@@ -1,1 +1,4 @@
 https://www.oracle.com/java/technologies/downloads/#java11
+
+
+https://sweetcode.io/how-to-deploy-postgresql-instance-to-kubernetes/
