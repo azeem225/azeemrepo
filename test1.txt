@@ -1,4 +1,4 @@
-ERROR: failed to solve: failed to read dockerfile: open /appl/docker/123000.123000/tmp/buildkit-mount350696157/Dockerfile: no such file or directory
-simple	29-Sep-2023 09:30:00	Failing task since return code of [/usr/bin/docker build --force-rm=true --tag=gep-docker.docker.devstack.vwgroup.com/hello-world-todoapp /appl/bamboo-agent/xml-data/build-dir/HP-GH0-JOB1/frontend] was 1 while expected 0
-error	29-Sep-2023 09:30:00	Error occurred while running Task 'Docker Image Build(2)' of type com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli.
-error	29-Sep-2023 09:30:00	com.atlassian.bamboo.task.TaskException: Failed to execute task
+ERROR: failed to solve: failed to read dockerfile: open /appl/docker/123000.123000/tmp/buildkit-mount79654232/Dockerfile: no such file or directory
+29-Sep-2023 10:17:16	Failing task since return code of [/usr/bin/docker build --force-rm=true --tag=gep-docker.docker.devstack.vwgroup.com/hello-world-todoapp /appl/bamboo-agent/xml-data/build-dir/HP-GH0-JOB1/./frontend] was 1 while expected 0
+29-Sep-2023 10:17:16	Error occurred while running Task 'Docker Image Build(2)' of type com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli.
+29-Sep-2023 10:17:16	com.atlassian.bamboo.task.TaskException: Failed to execute task
