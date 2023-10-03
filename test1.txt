@@ -2,3 +2,7 @@ ERROR: failed to solve: failed to read dockerfile: open /appl/docker/123000.1230
 29-Sep-2023 10:17:16	Failing task since return code of [/usr/bin/docker build --force-rm=true --tag=gep-docker.docker.devstack.vwgroup.com/hello-world-todoapp /appl/bamboo-agent/xml-data/build-dir/HP-GH0-JOB1/./frontend] was 1 while expected 0
 29-Sep-2023 10:17:16	Error occurred while running Task 'Docker Image Build(2)' of type com.atlassian.bamboo.plugins.bamboo-docker-plugin:task.docker.cli.
 29-Sep-2023 10:17:16	com.atlassian.bamboo.task.TaskException: Failed to execute task
+
+
+https://get.helm.sh/helm-v3.13.0-windows-amd64.zip
+
