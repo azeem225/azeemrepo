@@ -6,3 +6,5 @@ ERROR: failed to solve: failed to read dockerfile: open /appl/docker/123000.1230
 
 https://get.helm.sh/helm-v3.13.0-windows-amd64.zip
 
+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
+
