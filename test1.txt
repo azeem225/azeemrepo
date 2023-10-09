@@ -8,3 +8,59 @@ https://get.helm.sh/helm-v3.13.0-windows-amd64.zip
 
 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
 
+
+
+
+In a Kubernetes microservice architecture, you can access backend services through API calls without using DNS by using Kubernetes Service Discovery mechanisms and directly referencing the service's Cluster IP or an external IP. Here's a step-by-step guide on how to achieve this:
+
+1. **Create Kubernetes Services**:
+
+    In Kubernetes, you create Services to expose your backend microservices. These services can be of type ClusterIP (default), NodePort, or LoadBalancer, depending on your requirements. For API access within the cluster, ClusterIP is often used.
+
+    Example YAML for creating a ClusterIP Service:
+
+    ```yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: backend-service
+    spec:
+      selector:
+        app: backend-app
+      ports:
+        - protocol: TCP
+          port: 80
+          targetPort: 8080
+    ```
+
+    Replace `backend-service` with the name of your service, `app: backend-app` with your labels for the backend pods, and `port` and `targetPort` as per your backend configuration.
+
+2. **API Calls from Other Microservices**:
+
+    In your frontend or other microservices, you can make API calls to the backend service directly using its Cluster IP. You don't need to use DNS for service discovery within the cluster.
+
+    For example, if your backend service is named `backend-service`, you can make API calls to it like this:
+
+    ```
+    http://backend-service:80/api/endpoint
+    ```
+
+    Kubernetes takes care of routing the request to the appropriate backend pods.
+
+3. **Namespace Consideration**:
+
+    Ensure you are in the correct namespace when making the API calls. If your frontend and backend services are in different namespaces, you may need to use the fully-qualified domain name (FQDN) like `http://backend-service.namespace.svc.cluster.local:80/api/endpoint`.
+
+4. **Network Policies**:
+
+    Be mindful of Kubernetes Network Policies. Ensure that your network policies allow communication between the pods or services that need to communicate.
+
+5. **Service Ports and Protocol**:
+
+    Ensure that the port and protocol in your API call match the configuration of your backend service. In the example above, it's using port 80 and HTTP protocol (HTTP/HTTPS), but you should adjust this according to your actual setup.
+
+6. **Load Balancing**:
+
+    If your backend service is of type LoadBalancer, you can access it via the external IP assigned to the service. In this case, you don't need to use DNS either, but you'll access it through an external IP.
+
+Remember that Kubernetes will handle service discovery and routing internally, allowing your microservices to communicate without needing to explicitly reference DNS names.
