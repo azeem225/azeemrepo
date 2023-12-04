@@ -1,4 +1,1 @@
-Scanning for projects...
-error  16-Oct-2023 14:13:22  #11 1.337 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-parent/2.3.0.RELEASE/spring-boot-starter-parent-2.3.0.RELEASE.pom
-error  16-Oct-2023 14:13:22  #11 1.390 [ERROR] [ERROR] Some problems were encountered while processing the POMs:
-error  16-Oct-2023 14:13:22  #11 1.390 [FATAL] Non-resolvable parent POM for com.claykab:todo_api:0.0.1-SNAPSHOT: Could not transfer artifact org.springframework.boot:spring-boot-starter-parent:pom:2.3.0.RELEASE from/to central (https://repo.maven.apache.org/maven2): transfer failed for https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-parent/2.3.0.RELEASE/spring-boot-starter-parent-2.3.0.RELEASE.pom and 'parent.relativePath' points at no local POM @ line 5, column 10
+https://apps.apple.com/de/app/app-deutschlandticket-de/id1672638598
