@@ -1,4 +1,6 @@
 # Requirement Sheet
+https://drive.google.com/drive/folders/1ixcShle5qvXvdwUNI7nFbZ4l-E8hd-Hc
+
 
 ## Service Configuration
 
@@ -20,7 +22,7 @@
 ## Containerization & GitOps
 
 - Infra spun up using Infrastructure-as-Code (IaC) images stored in Artifact Repository
-- Environment-specific application configurations should be outside of the image
+- Environment-specific app configurations should be outside of the image
 - Changing configurations should not require app re-deployment
 - Use ConfigMaps for non-sensitive configuration and Secrets for sensitive data
 
